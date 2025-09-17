@@ -1,8 +1,9 @@
 import { BrowserWindow, ipcMain, globalShortcut, app, screen } from 'electron';
-import { Plugin, PluginBus, ConfigManager, Logger, PluginError, ScreenshotItem, ScreenshotConfig, CaptureMode, Region, WindowInfo } from '@free-cluely/shared';
+import { Plugin, PluginBus, ConfigManager, Logger, PluginError, ScreenshotItem, ScreenshotConfig, CaptureMode, Region, WindowInfo, ScreenshotPipelineConfig, PipelineResult } from '@free-cluely/shared';
 import { v4 as uuidv4 } from 'uuid';
 import { writeFileSync, mkdirSync, existsSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
+import { ScreenshotPipeline } from './ScreenshotPipeline';
 
 interface CancellationToken {
   isCancelled: boolean;
@@ -112,6 +113,7 @@ export class ScreenshotPlugin implements Plugin {
   private operationTimeouts: Map<string, NodeJS.Timeout> = new Map();
   private currentOperationName: string | null = null;
   private operationStartTime: number | null = null;
+  private pipeline: ScreenshotPipeline;
 
   constructor(config: Partial<ScreenshotConfig> = {}) {
     this.config = {
@@ -141,7 +143,7 @@ export class ScreenshotPlugin implements Plugin {
   async initialize(bus: PluginBus, configManager: ConfigManager, logger: Logger): Promise<void> {
     this.bus = bus;
     this.logger = logger;
-    
+
     // Load configuration
     const screenshotConfig = configManager.get('screenshot') as ScreenshotConfig;
     if (screenshotConfig) {
@@ -155,16 +157,20 @@ export class ScreenshotPlugin implements Plugin {
     }
 
     this.logger.info('Initializing ScreenshotPlugin');
-    
+
+    // Initialize pipeline
+    const pipelineConfig = configManager.get('screenshotPipeline') as ScreenshotPipelineConfig;
+    this.pipeline = new ScreenshotPipeline(pipelineConfig, bus, logger);
+
     // Setup IPC handlers
     this.setupIpcHandlers();
-    
+
     // Register global shortcut
     this.registerGlobalShortcut();
-    
+
     // Register plugin methods
     this.registerPluginMethods();
-    
+
     // Load existing screenshots
     await this.loadExistingScreenshots();
 
@@ -334,6 +340,38 @@ export class ScreenshotPlugin implements Plugin {
       } catch (error) {
         this.logger.error('IPC validation failed for screenshot:setConfig:', error);
         throw this.createIPError('Invalid configuration', error);
+      }
+    });
+
+    // Pipeline management handlers
+    ipcMain.handle('screenshot:getPipelineStats', async () => {
+      try {
+        return await this.getPipelineStats();
+      } catch (error) {
+        this.logger.error('IPC failed for screenshot:getPipelineStats:', error);
+        throw this.createIPError('Failed to get pipeline stats', error);
+      }
+    });
+
+    ipcMain.handle('screenshot:updatePipelineConfig', async (event, config?: Partial<ScreenshotPipelineConfig>) => {
+      try {
+        const validatedConfig = this.validatePipelineConfig(config);
+        return await this.updatePipelineConfig(validatedConfig);
+      } catch (error) {
+        this.logger.error('IPC validation failed for screenshot:updatePipelineConfig:', error);
+        throw this.createIPError('Invalid pipeline configuration', error);
+      }
+    });
+
+    ipcMain.handle('screenshot:createPipelineSession', async (event, name: string, description?: string) => {
+      try {
+        if (!name || typeof name !== 'string') {
+          throw new Error('Session name is required and must be a string');
+        }
+        return await this.createPipelineSession(name, description);
+      } catch (error) {
+        this.logger.error('IPC failed for screenshot:createPipelineSession:', error);
+        throw this.createIPError('Failed to create pipeline session', error);
       }
     });
 
@@ -513,18 +551,26 @@ export class ScreenshotPlugin implements Plugin {
 
       cancellationToken.throwIfCancelled();
 
-      // Attach to artifact if possible
-      let artifactId;
+      // Process through pipeline for job and artifact creation
+      let pipelineResult: PipelineResult | null = null;
       try {
-        artifactId = await this.attachToArtifact(screenshotItem, cancellationToken);
-        if (artifactId) {
-          screenshotItem.artifactId = artifactId;
+        pipelineResult = await this.pipeline.processScreenshot(screenshotItem, cancellationToken);
+        if (pipelineResult.success) {
+          screenshotItem.artifactId = pipelineResult.artifactId;
+          this.logger.info(`Screenshot processed through pipeline`, {
+            jobId: pipelineResult.jobId,
+            artifactId: pipelineResult.artifactId,
+            sessionId: pipelineResult.sessionId,
+            processingTime: pipelineResult.processingTime
+          });
+        } else {
+          this.logger.warn('Screenshot pipeline processing failed:', pipelineResult.error);
         }
       } catch (error) {
-        this.logger.warn('Failed to attach screenshot to artifact:', error);
+        this.logger.warn('Failed to process screenshot through pipeline:', error);
       }
 
-      // Add to appropriate queue
+      // Add to appropriate queue (for backward compatibility)
       const queue = type === 'problem' ? this.problemQueue : this.debugQueue;
       queue.push(screenshotItem);
 
@@ -538,6 +584,14 @@ export class ScreenshotPlugin implements Plugin {
 
       this.logger.info(`Captured ${type} screenshot (${captureMode} mode): ${filename}`);
       this.bus.emit('screenshot:captured', screenshotItem);
+
+      // Emit pipeline completion event
+      if (pipelineResult) {
+        this.bus.emit('screenshot:pipelineCompleted', {
+          screenshot: screenshotItem,
+          pipelineResult
+        });
+      }
 
       // Show overlay again after capture (race-free)
       if (this.config.autoHideOverlay) {
@@ -840,58 +894,65 @@ export class ScreenshotPlugin implements Plugin {
     this.logger.info(`Cleaned up preview cache, removed ${toRemove.length} entries`);
   }
 
-  private async attachToArtifact(screenshot: ScreenshotItem, cancellationToken?: CancellationToken): Promise<string | null> {
-    return await withTimeout(
-      this.performArtifactAttachment(screenshot, cancellationToken),
-      this.config.timeouts.artifactAttachment,
-      'attachToArtifact',
-      cancellationToken
-    );
+  // Pipeline management methods
+  private async getPipelineStats(): Promise<any> {
+    return this.pipeline.getPipelineStats();
   }
 
-  private async performArtifactAttachment(screenshot: ScreenshotItem, cancellationToken?: CancellationToken): Promise<string | null> {
-    try {
-      cancellationToken?.throwIfCancelled();
+  private async updatePipelineConfig(config: Partial<ScreenshotPipelineConfig>): Promise<void> {
+    this.pipeline.updateConfig(config);
+    this.logger.info('Pipeline configuration updated');
+  }
 
-      // Try to attach screenshot to an existing job artifact
-      const artifactData = {
-        jobId: 0, // Would be populated from context
-        type: 'screenshot' as const,
-        name: screenshot.filename,
-        description: `Screenshot captured in ${screenshot.captureMode} mode`,
-        mimeType: `image/${this.config.format}`,
-        metadata: {
-          captureMode: screenshot.captureMode,
-          timestamp: screenshot.timestamp,
-          type: screenshot.type,
-          size: screenshot.size,
-          region: screenshot.region,
-          windowInfo: screenshot.windowInfo
-        },
-        fileData: Buffer.from(screenshot.base64, 'base64')
-      };
+  private async createPipelineSession(name: string, description?: string): Promise<string | null> {
+    return await this.pipeline.createCustomSession(name, description);
+  }
 
-      cancellationToken?.throwIfCancelled();
+  private validatePipelineConfig(config?: any): Partial<ScreenshotPipelineConfig> {
+    if (!config || typeof config !== 'object') {
+      return {}; // Empty config is valid
+    }
 
-      // Emit event to create artifact
-      const result = await this.bus.send({
-        id: uuidv4(),
-        type: 'request',
-        plugin: 'database-service',
-        method: 'createArtifact',
-        payload: artifactData,
-        timestamp: Date.now()
-      });
+    const validatedConfig: Partial<ScreenshotPipelineConfig> = {};
 
-      if (result.success) {
-        return result.data.id;
+    // Validate boolean fields
+    if (config.autoCreateJobs !== undefined) {
+      if (typeof config.autoCreateJobs !== 'boolean') {
+        throw new Error('autoCreateJobs must be a boolean');
+      }
+      validatedConfig.autoCreateJobs = config.autoCreateJobs;
+    }
+
+    if (config.autoProcessScreenshots !== undefined) {
+      if (typeof config.autoProcessScreenshots !== 'boolean') {
+        throw new Error('autoProcessScreenshots must be a boolean');
+      }
+      validatedConfig.autoProcessScreenshots = config.autoProcessScreenshots;
+    }
+
+    // Validate nested objects
+    if (config.sessionManagement !== undefined) {
+      if (typeof config.sessionManagement !== 'object') {
+        throw new Error('sessionManagement must be an object');
+      }
+      validatedConfig.sessionManagement = {};
+
+      if (config.sessionManagement.autoCreateSessions !== undefined) {
+        if (typeof config.sessionManagement.autoCreateSessions !== 'boolean') {
+          throw new Error('sessionManagement.autoCreateSessions must be a boolean');
+        }
+        validatedConfig.sessionManagement.autoCreateSessions = config.sessionManagement.autoCreateSessions;
       }
 
-      return null;
-    } catch (error) {
-      this.logger.error('Failed to attach screenshot to artifact:', error);
-      return null;
+      if (config.sessionManagement.sessionTimeout !== undefined) {
+        if (typeof config.sessionManagement.sessionTimeout !== 'number' || config.sessionManagement.sessionTimeout < 1000) {
+          throw new Error('sessionManagement.sessionTimeout must be a number >= 1000');
+        }
+        validatedConfig.sessionManagement.sessionTimeout = config.sessionManagement.sessionTimeout;
+      }
     }
+
+    return validatedConfig;
   }
 
   // Validation methods
@@ -1208,6 +1269,9 @@ export class ScreenshotPlugin implements Plugin {
     ipcMain.removeHandler('screenshot:setConfig');
     ipcMain.removeHandler('screenshot:cancel');
     ipcMain.removeHandler('screenshot:getStatus');
+    ipcMain.removeHandler('screenshot:getPipelineStats');
+    ipcMain.removeHandler('screenshot:updatePipelineConfig');
+    ipcMain.removeHandler('screenshot:createPipelineSession');
 
     // Cancel any active operation
     if (this.activeCancellationToken) {
@@ -1216,6 +1280,9 @@ export class ScreenshotPlugin implements Plugin {
 
     // Clean up timeouts
     this.cleanupOperationTimeouts();
+
+    // Pipeline is automatically cleaned up through garbage collection
+    // since it doesn't hold external resources
 
     this.logger.info('ScreenshotPlugin destroyed');
   }

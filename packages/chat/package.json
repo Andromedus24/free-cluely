@@ -1,0 +1,80 @@
+{
+  "name": "@atlas/chat",
+  "version": "1.0.0",
+  "description": "Unified Chat System for Atlas AI Assistant with multi-modal support, RAG capabilities, and conversation management",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src --ext .ts,.js",
+    "lint:fix": "eslint src --ext .ts,.js --fix",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "chat",
+    "ai",
+    "assistant",
+    "rag",
+    "vector-search",
+    "conversation",
+    "multi-modal",
+    "streaming",
+    "atlas",
+    "llm",
+    "embeddings",
+    "nlp"
+  ],
+  "author": "Atlas Team",
+  "license": "MIT",
+  "dependencies": {
+    "uuid": "^9.0.0",
+    "zod": "^3.22.0",
+    "eventemitter3": "^4.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "typescript": "^5.0.0",
+    "ts-jest": "^29.0.0"
+  },
+  "peerDependencies": {
+    "@atlas/vision": "^1.0.0",
+    "@atlas/image-generation": "^1.0.0",
+    "@atlas/provider-adapters": "^1.0.0",
+    "@atlas/database": "^1.0.0",
+    "@atlas/core": "^1.0.0"
+  },
+  "optionalPeerDependencies": {
+    "@atlas/embeddings": "^1.0.0",
+    "@atlas/vector-db": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atlas-ai/atlas-chat.git"
+  },
+  "bugs": {
+    "url": "https://github.com/atlas-ai/atlas-chat/issues"
+  },
+  "homepage": "https://github.com/atlas-ai/atlas-chat#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Region Selection Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+            cursor: crosshair;
+            user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .selection-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+        }
+
+        .selection-box {
+            position: absolute;
+            border: 2px solid #007AFF;
+            background: rgba(0, 122, 255, 0.1);
+            pointer-events: none;
+            display: none;
+        }
+
+        .dimension-label {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            pointer-events: none;
+            display: none;
+            white-space: nowrap;
+        }
+
+        .instructions {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 10000;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .cancel-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 10000;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+    <div class="selection-overlay" id="selectionOverlay">
+        <div class="selection-box" id="selectionBox"></div>
+        <div class="dimension-label" id="dimensionLabel"></div>
+        <div class="instructions">
+            Click and drag to select a region to capture
+        </div>
+        <div class="cancel-hint">
+            Press ESC to cancel
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        let isSelecting = false;
+        let startX = 0;
+        let startY = 0;
+        let currentX = 0;
+        let currentY = 0;
+
+        const selectionOverlay = document.getElementById('selectionOverlay');
+        const selectionBox = document.getElementById('selectionBox');
+        const dimensionLabel = document.getElementById('dimensionLabel');
+
+        function getMousePosition(e) {
+            return {
+                x: e.clientX,
+                y: e.clientY
+            };
+        }
+
+        function updateSelectionBox() {
+            const left = Math.min(startX, currentX);
+            const top = Math.min(startY, currentY);
+            const width = Math.abs(currentX - startX);
+            const height = Math.abs(currentY - startY);
+
+            selectionBox.style.left = left + 'px';
+            selectionBox.style.top = top + 'px';
+            selectionBox.style.width = width + 'px';
+            selectionBox.style.height = height + 'px';
+
+            // Update dimension label
+            dimensionLabel.textContent = `${width} × ${height}`;
+            dimensionLabel.style.left = (left + width + 10) + 'px';
+            dimensionLabel.style.top = (top - 30) + 'px';
+
+            // Show elements
+            selectionBox.style.display = 'block';
+            dimensionLabel.style.display = 'block';
+        }
+
+        function startSelection(e) {
+            if (e.button !== 0) return; // Only left mouse button
+
+            isSelecting = true;
+            const pos = getMousePosition(e);
+            startX = pos.x;
+            startY = pos.y;
+            currentX = pos.x;
+            currentY = pos.y;
+
+            // Hide instructions
+            document.querySelector('.instructions').style.display = 'none';
+        }
+
+        function updateSelection(e) {
+            if (!isSelecting) return;
+
+            const pos = getMousePosition(e);
+            currentX = pos.x;
+            currentY = pos.y;
+            updateSelectionBox();
+        }
+
+        function endSelection(e) {
+            if (!isSelecting) return;
+
+            isSelecting = false;
+
+            const left = Math.min(startX, currentX);
+            const top = Math.min(startY, currentY);
+            const width = Math.abs(currentX - startX);
+            const height = Math.abs(currentY - startY);
+
+            // Minimum size check
+            if (width < 10 || height < 10) {
+                cancelSelection();
+                return;
+            }
+
+            // Send selection to main process
+            ipcRenderer.send('region-selected', {
+                x: left,
+                y: top,
+                width: width,
+                height: height
+            });
+        }
+
+        function cancelSelection() {
+            isSelecting = false;
+            selectionBox.style.display = 'none';
+            dimensionLabel.style.display = 'none';
+            ipcRenderer.send('region-cancelled');
+        }
+
+        // Event listeners
+        selectionOverlay.addEventListener('mousedown', startSelection);
+        selectionOverlay.addEventListener('mousemove', updateSelection);
+        selectionOverlay.addEventListener('mouseup', endSelection);
+
+        // Keyboard events
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                cancelSelection();
+            }
+        });
+
+        // Prevent context menu
+        selectionOverlay.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // Prevent default drag behavior
+        selectionOverlay.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+        });
+
+        // Handle window blur (user clicked outside)
+        window.addEventListener('blur', () => {
+            if (isSelecting) {
+                cancelSelection();
+            }
+        });
+    </script>
+</body>
+</html>

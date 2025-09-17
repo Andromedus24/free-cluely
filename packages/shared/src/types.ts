@@ -72,6 +72,42 @@ export const ScreenshotConfigSchema = z.object({
 
 export type ScreenshotConfig = z.infer<typeof ScreenshotConfigSchema>;
 
+// Screenshot Pipeline Types
+export const ScreenshotPipelineConfigSchema = z.object({
+  autoCreateJobs: z.boolean().default(true),
+  autoProcessScreenshots: z.boolean().default(true),
+  jobTemplates: z.object({
+    problem: z.object({
+      title: z.string().default('Screenshot Analysis Request'),
+      description: z.string().default('Analyze screenshot for problem identification and solution'),
+      tags: z.array(z.string()).default(['screenshot', 'problem', 'analysis'])
+    }),
+    debug: z.object({
+      title: z.string().default('Debug Screenshot Analysis'),
+      description: z.string().default('Analyze screenshot for debugging and troubleshooting'),
+      tags: z.array(z.string()).default(['screenshot', 'debug', 'troubleshooting'])
+    })
+  }).default({}),
+  sessionManagement: z.object({
+    autoCreateSessions: z.boolean().default(true),
+    sessionTimeout: z.number().default(30 * 60 * 1000), // 30 minutes
+    defaultSessionName: z.string().default('Screenshot Analysis Session')
+  }).default({})
+});
+
+export type ScreenshotPipelineConfig = z.infer<typeof ScreenshotPipelineConfigSchema>;
+
+export const PipelineResultSchema = z.object({
+  success: z.boolean(),
+  jobId: z.string().optional(),
+  artifactId: z.string().optional(),
+  sessionId: z.string().optional(),
+  error: z.string().optional(),
+  processingTime: z.number()
+});
+
+export type PipelineResult = z.infer<typeof PipelineResultSchema>;
+
 export const CaptureModeSchema = z.enum(['full', 'window', 'region']);
 export type CaptureMode = z.infer<typeof CaptureModeSchema>;
 
