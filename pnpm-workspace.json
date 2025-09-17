@@ -1,0 +1,38 @@
+{
+  "name": "free-cluely-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.12.3",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "format": "turbo run format",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test",
+    "dist": "turbo run dist",
+    "start:dashboard": "pnpm --filter dashboard dev",
+    "start:electron": "pnpm --filter electron-host dev",
+    "start:all": "concurrently \"pnpm start:dashboard\" \"wait-on http://localhost:3000 && pnpm start:electron\"",
+    "build:dashboard": "pnpm --filter dashboard build",
+    "build:electron": "pnpm --filter electron-host build",
+    "build:all": "pnpm run build:dashboard && pnpm run build:electron"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "turbo": "^2.2.3",
+    "typescript": "^5.6.3",
+    "concurrently": "^9.1.0",
+    "wait-on": "^8.0.1"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "plugins/*"
+  ]
+}

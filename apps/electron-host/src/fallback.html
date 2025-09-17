@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free-Cluely - AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: white;
+        }
+
+        .status {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .shortcuts {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .shortcut {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin: 0.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 2rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .actions {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🤖</div>
+        <h1>Free-Cluely</h1>
+        <p class="subtitle">AI-powered desktop assistant with plugin architecture</p>
+        
+        <div class="actions">
+            <button class="btn btn-primary" onclick="captureScreenshot()">
+                📸 Take Screenshot
+            </button>
+            <button class="btn" onclick="openDashboard()">
+                📊 Open Dashboard
+            </button>
+            <button class="btn" onclick="showSettings()">
+                ⚙️ Settings
+            </button>
+        </div>
+
+        <div class="status">
+            <strong>Status:</strong> <span id="status">Ready</span>
+            <div class="shortcuts">
+                <div>Quick Actions:</div>
+                <span class="shortcut">Ctrl+Shift+S</span> Screenshot
+                <span class="shortcut">Ctrl+Shift+F</span> Toggle Window
+                <span class="shortcut">Ctrl+Shift+A</span> Quick Actions
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if we have access to the Electron API
+        if (window.electronAPI) {
+            // Initialize the app
+            window.electronAPI.app.getInfo().then(info => {
+                document.getElementById('status').textContent = `Running ${info.name} v${info.version}`;
+            });
+
+            // Screenshot functionality
+            async function captureScreenshot() {
+                try {
+                    updateStatus('Capturing screenshot...');
+                    const imageData = await window.electronAPI.screenshot.capture();
+                    
+                    // In a real implementation, this would process the screenshot
+                    updateStatus('Screenshot captured successfully!');
+                    
+                    // Show success notification
+                    showNotification('Screenshot captured', 'Your screenshot has been processed.');
+                } catch (error) {
+                    updateStatus('Failed to capture screenshot');
+                    console.error('Screenshot error:', error);
+                }
+            }
+
+            // Open dashboard
+            function openDashboard() {
+                window.electronAPI.dashboard.open();
+            }
+
+            // Show settings
+            function showSettings() {
+                updateStatus('Opening settings...');
+                // This would typically open a settings modal or navigate to settings
+                showNotification('Settings', 'Settings panel would open here.');
+            }
+
+            // Update status
+            function updateStatus(message) {
+                document.getElementById('status').textContent = message;
+                setTimeout(() => {
+                    document.getElementById('status').textContent = 'Ready';
+                }, 3000);
+            }
+
+            // Show notification (fallback)
+            function showNotification(title, message) {
+                if ('Notification' in window) {
+                    new Notification(title, {
+                        body: message,
+                        icon: '/favicon.ico'
+                    });
+                }
+            }
+
+            // Set up keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.shiftKey) {
+                    switch(e.key.toLowerCase()) {
+                        case 's':
+                            e.preventDefault();
+                            captureScreenshot();
+                            break;
+                        case 'f':
+                            e.preventDefault();
+                            window.electronAPI.window.hide();
+                            break;
+                        case 'a':
+                            e.preventDefault();
+                            showNotification('Quick Actions', 'Quick actions menu would appear here.');
+                            break;
+                    }
+                }
+            });
+
+            // Listen for permission requests
+            window.electronAPI.permissions.onPermissionDialog((request) => {
+                const granted = confirm(`Allow ${request.permission}?\\n\\n${request.reason || ''}`);
+                window.electronAPI.permissionDialog.respond(request.id, granted);
+            });
+
+            // Listen for config changes
+            window.electronAPI.config.onConfigChange((config) => {
+                console.log('Config updated:', config);
+            });
+
+            // Request notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+
+        } else {
+            // Fallback for non-Electron environment
+            document.getElementById('status').textContent = 'Electron API not available';
+            
+            // Disable buttons
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+            });
+        }
+    </script>
+</body>
+</html>

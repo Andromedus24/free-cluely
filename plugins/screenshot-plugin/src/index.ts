@@ -1,0 +1,1 @@
+export { ScreenshotPlugin } from './ScreenshotPlugin';

@@ -1,0 +1,36 @@
+{
+  "name": "@atlas/core",
+  "version": "1.0.0",
+  "description": "Core services for Atlas including secure storage, IPC, and database",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src --ext .ts,.tsx",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@atlas/shared": "workspace:*",
+    "@atlas/adapters": "workspace:*",
+    "keytar": "^7.9.0",
+    "sqlite3": "^5.1.6",
+    "zod": "^3.22.4",
+    "crypto": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "typescript": "^5.3.3",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.11",
+    "ts-jest": "^29.1.1",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@types/keytar": "^7.9.0"
+  },
+  "keywords": ["secure-storage", "ipc", "database", "atlas"],
+  "author": "Atlas Team",
+  "license": "MIT"
+}

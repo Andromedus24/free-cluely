@@ -1,0 +1,32 @@
+{
+  "name": "@free-cluely/electron-host",
+  "version": "1.0.0",
+  "description": "Electron host application for Free-Cluely",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "electron .",
+    "clean": "rimraf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@free-cluely/shared": "workspace:*",
+    "@free-cluely/plugin-bus": "workspace:*",
+    "@free-cluely/config": "workspace:*",
+    "@free-cluely/permissions": "workspace:*",
+    "@free-cluely/overlay-plugin": "workspace:*",
+    "@free-cluely/screenshot-plugin": "workspace:*",
+    "electron": "^33.2.0",
+    "screenshot-desktop": "^1.15.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/screenshot-desktop": "^1.12.3",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.6.3"
+  },
+  "keywords": ["electron", "desktop", "ai", "assistant"],
+  "author": "Free-Cluely Team",
+  "license": "MIT"
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@free-cluely/vision-service",
+  "version": "1.0.0",
+  "description": "AI-powered image analysis and text extraction plugin for Free-Cluely",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "type-check": "tsc --noEmit",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@free-cluely/shared": "workspace:*",
+    "@free-cluely/plugin-bus": "workspace:*",
+    "sharp": "^0.33.5",
+    "tesseract.js": "^5.0.5",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/sharp": "^0.32.0",
+    "@types/uuid": "^9.0.8",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.6.3"
+  },
+  "keywords": ["vision", "ai", "ocr", "image-analysis", "text-extraction"],
+  "author": "Free-Cluely Team",
+  "license": "MIT"
+}

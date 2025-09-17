@@ -1,0 +1,51 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "**/.env.*local",
+    "tsconfig.json",
+    "turbo.json"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "build/**", ".next/**", "out/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "outputs": []
+    },
+    "type-check": {
+      "outputs": []
+    },
+    "clean": {
+      "cache": false
+    },
+    "format": {
+      "outputs": []
+    },
+    "test": {
+      "outputs": []
+    },
+    "dist": {
+      "dependsOn": ["build"],
+      "outputs": ["release/**", "dist/**"]
+    }
+  },
+  "globalEnv": [
+    "NODE_ENV",
+    "GEMINI_API_KEY",
+    "OLLAMA_HOST",
+    "OLLAMA_MODEL",
+    "AUTOMATION_ALLOWLIST",
+    "PERMISSION_SCREEN",
+    "PERMISSION_CLIPBOARD",
+    "PERMISSION_AUTOMATION",
+    "PERMISSION_NETWORK",
+    "DASHBOARD_PORT",
+    "ELECTRON_PORT",
+    "TELEMETRY_ENABLED"
+  ]
+}

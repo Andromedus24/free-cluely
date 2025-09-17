@@ -1,267 +1,363 @@
-# Cluely
+# Free-Cluely - AI-Powered Desktop Assistant
 
-[Cluely](https://cluely.com) - The invisible desktop assistant that provides real-time insights, answers, and support during meetings, interviews, presentations, and professional conversations.
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0-brightgreen.svg)](https://nodejs.org/)
+[![PNPM](https://img.shields.io/badge/pnpm-%3E%3D9.0-orange.svg)](https://pnpm.io/)
+[![TypeScript](https://img.shields.io/badge/typescript-strict-blue.svg)](https://www.typescriptlang.org/)
+[![Electron](https://img.shields.io/badge/electron-33.2.0-9ff4ff.svg)](https://www.electronjs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Sponsored by Recall AI - API for desktop recording
-If you’re looking for a hosted desktop recording API, consider checking out [Recall.ai](https://www.recall.ai/product/desktop-recording-sdk?utm_source=github&utm_medium=sponsorship&utm_campaign=prat011-free-cluely), an API that records Zoom, Google Meet, Microsoft Teams, in-person meetings, and more.
+🤖 **Free-Cluely** is a modern, extensible AI-powered desktop assistant built with Electron, featuring a plugin architecture, web dashboard, and intelligent automation capabilities.
 
-## 🚀 Quick Start Guide
+## ✨ Features
+
+### 🏗️ Modern Architecture
+- **Monorepo Structure**: PNPM + Turborepo for efficient development
+- **TypeScript Strict**: Full type safety across all components
+- **Electron Security**: Context isolation, no nodeIntegration, sandboxed renderer
+- **Plugin System**: Extensible architecture with typed IPC communication
+
+### 🖥️ Dashboard Interface
+- **Settings Management**: Comprehensive configuration UI
+- **Real-time Logs**: Live monitoring and filtering
+- **Plugin Management**: Install, configure, and monitor plugins
+- **Performance Metrics**: System statistics and usage analytics
+
+### 🔌 Smart Plugins
+- **Puppeteer Worker**: Browser automation with domain allowlist security
+- **Vision Service**: AI-powered image analysis and OCR capabilities
+- **Plugin Bus**: Typed inter-process communication with child processes
+
+### 🔒 Security & Permissions
+- **Opt-in Permissions**: Screen, Clipboard, Automation, Network access controls
+- **Domain Allowlist**: Secure automation with configurable domain restrictions
+- **No Telemetry**: Privacy-first design with optional anonymous usage statistics
+- **Electron Security**: Context isolation, sandboxed renderer process
+
+### 🌍 Cross-Platform
+- **macOS**: Universal binaries with Apple Silicon support
+- **Windows**: NSIS installer with portable option
+- **Linux**: AppImage and DEB packages
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- Make sure you have Node.js installed on your computer
-- Git installed on your computer  
-- **Either** a Gemini API key (get it from [Google AI Studio](https://makersuite.google.com/app/apikey))
-- **Or** Ollama installed locally for private LLM usage (recommended for privacy)
+- Node.js 20+
+- PNPM 9+
+- Git (optional)
 
-### Installation Steps
-
-1. Clone the repository:
+### One-Click Setup
 ```bash
-git clone [repository-url]
+# Clone and setup automatically
+git clone https://github.com/free-cluely/free-cluely.git
 cd free-cluely
+./setup.sh
 ```
 
-2. Install dependencies:
+### Manual Setup
 ```bash
-# If you encounter Sharp/Python build errors, use this:
-SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install --ignore-scripts
-npm rebuild sharp
+# Install dependencies
+pnpm install
 
-# Or for normal installation:
-npm install
+# Build packages
+pnpm run build:packages
+
+# Copy environment template
+cp .env.example .env
+
+# Start development
+pnpm run dev:all
 ```
 
-3. Set up environment variables:
-   - Create a file named `.env` in the root folder
-   
-   **For Gemini (Cloud AI):**
-   ```env
-   GEMINI_API_KEY=your_api_key_here
+### Production Build
+```bash
+# Standard build (dynamic dashboard)
+pnpm run build:prod
+
+# Static export (embedded dashboard)
+pnpm run build:static
+
+# Package only (no rebuild)
+pnpm run build:packages-only
+```
+
+## 📁 Project Structure
+
+```
+free-cluely/
+├── apps/
+│   ├── dashboard/          # Next.js dashboard application
+│   │   ├── src/
+│   │   │   ├── app/        # App router pages
+│   │   │   └── components/ # UI components
+│   │   └── out/           # Static export output
+│   └── electron-host/     # Electron main application
+│       ├── src/
+│       │   ├── main.ts     # Main process
+│       │   ├── preload.ts  # Preload script
+│       │   └── fallback.html # Fallback UI
+│       └── dist/          # Compiled TypeScript
+├── packages/
+│   ├── shared/           # Shared types and utilities
+│   ├── plugin-bus/       # Plugin communication system
+│   ├── config/           # Configuration management
+│   └── permissions/      # Permission system
+├── plugins/
+│   ├── puppeteer-worker/ # Browser automation plugin
+│   │   ├── src/
+│   │   │   ├── PuppeteerWorkerPlugin.ts
+│   │   │   └── index.ts
+│   │   └── dist/
+│   └── vision-service/   # Image analysis plugin
+│       ├── src/
+│       │   ├── VisionServicePlugin.ts
+│       │   └── index.ts
+│       └── dist/
+├── scripts/
+│   ├── setup.sh          # Development setup script
+│   ├── build-prod.js     # Production build script
+│   └── before-build.js   # Pre-build validation
+├── assets/
+│   ├── icons/            # Application icons
+│   ├── entitlements.mac.plist # macOS security
+│   └── installer.nsh     # Windows installer script
+└── release/              # Built applications
+```
+
+## ⚙️ Configuration
+
+### Environment Variables
+Create a `.env` file based on `.env.example`:
+
+```env
+# LLM Configuration
+GEMINI_API_KEY=your_gemini_api_key_here
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+
+# Permissions
+PERMISSION_SCREEN=true
+PERMISSION_CLIPBOARD=false
+PERMISSION_AUTOMATION=false
+PERMISSION_NETWORK=true
+
+# Automation Security
+AUTOMATION_ALLOWLIST=example.com,*.trusted-domain.com
+
+# Dashboard
+DASHBOARD_PORT=3000
+DASHBOARD_ENABLED=true
+
+# Telemetry (disabled by default)
+TELEMETRY_ENABLED=false
+```
+
+### Configuration Management
+- **File-based**: JSON configuration in `config.json`
+- **Environment**: Override with `.env` variables
+- **Runtime**: Update through dashboard or API
+- **Validation**: Automatic schema validation
+
+## 🔌 Plugin Development
+
+### Creating a Plugin
+1. Create plugin directory in `plugins/`
+2. Implement plugin interface:
+   ```typescript
+   export class MyPlugin implements Plugin {
+     name = 'my-plugin';
+     version = '1.0.0';
+     permissions = ['network'];
+     
+     async initialize(bus: PluginBus, config: ConfigManager, logger: Logger): Promise<void> {
+       // Plugin initialization
+     }
+     
+     async destroy(): Promise<void> {
+       // Cleanup
+     }
+   }
    ```
-   
-   **For Ollama (Local/Private AI):**
-   ```env
-   USE_OLLAMA=true
-   OLLAMA_MODEL=llama3.2
-   OLLAMA_URL=http://localhost:11434
-   ```
-   
-   - Save the file
+3. Add to `package.json` with proper manifest
+4. Build with `pnpm run build:plugins`
 
-### Running the App
+### Plugin Communication
+```typescript
+// Send message to plugin
+const response = await bus.send({
+  id: uuidv4(),
+  type: 'request',
+  plugin: 'puppeteer-worker',
+  method: 'navigate',
+  payload: { url: 'https://example.com' },
+  timestamp: Date.now()
+});
 
-#### Method 1: Development Mode (Recommended for first run)
-1. Start the development server:
-```bash
-npm start
+// Broadcast event
+bus.broadcast({
+  plugin: 'system',
+  method: 'screenshot',
+  payload: { imageData: 'base64...' }
+});
 ```
 
-This command automatically:
-- Starts the Vite dev server on port 5180
-- Waits for the server to be ready
-- Launches the Electron app
+## 🛡️ Security Features
 
-#### Method 2: Production Build
+### Permission System
+- **Screen Capture**: Screenshot and analysis capabilities
+- **Clipboard Access**: Read/write clipboard operations
+- **Browser Automation**: Control web browser with domain restrictions
+- **Network Access**: API calls and external requests
+
+### Automation Security
+- **Domain Allowlist**: Configurable domain restrictions
+- **Permission Validation**: Runtime permission checks
+- **User Prompts**: Interactive permission requests
+- **Audit Logging**: Complete action logging
+
+### Electron Security
+- **Context Isolation**: Prevent renderer access to Node.js
+- **Sandboxed Renderer**: Restricted renderer process
+- **Content Security Policy**: Prevent XSS attacks
+- **Native Module Validation**: Secure native module loading
+
+## 🎯 Development Commands
+
+### Development
 ```bash
-npm run dist
+pnpm run dev:all          # Start all services
+pnpm run dev:dashboard     # Dashboard only
+pnpm run dev:electron      # Electron app only
 ```
-The built app will be in the `release` folder.
 
-## 🤖 AI Provider Options
+### Building
+```bash
+pnpm run build              # Build all components
+pnpm run build:prod        # Production build
+pnpm run build:static      # Static export
+pnpm run build:packages    # Build packages only
+```
 
-### Ollama (Recommended for Privacy)
-**Pros:**
-- 100% private - data never leaves your computer
-- No API costs
-- Works offline
-- Supports many models: llama3.2, codellama, mistral, etc.
+### Packaging
+```bash
+pnpm run package            # Package for current platform
+pnpm run package:mac        # macOS package
+pnpm run package:win        # Windows package
+pnpm run package:linux      # Linux package
+```
 
-**Setup:**
-1. Install Ollama from [ollama.ai](https://ollama.ai)
-2. Pull a model: `ollama pull llama3.2`
-3. Set environment variables as shown above
+### Maintenance
+```bash
+pnpm run lint               # Lint all code
+pnpm run type-check         # Type checking
+pnpm run test               # Run tests
+pnpm run clean              # Clean build artifacts
+```
 
-### Google Gemini
-**Pros:**
-- Latest AI technology
-- Fastest responses
-- Best accuracy for complex tasks
+## 📊 Dashboard Features
 
-**Cons:**
-- Requires API key and internet
-- Data sent to Google servers
-- Usage costs apply
+### Settings Management
+- **LLM Configuration**: Gemini and Ollama provider setup
+- **Permission Controls**: Granular permission management
+- **Automation Settings**: Domain allowlist configuration
+- **Dashboard Options**: Port and enable/disable settings
+- **Telemetry**: Anonymous usage statistics
 
-### ⚠️ Important Notes
+### Logs & Monitoring
+- **Real-time Logs**: Live log streaming with filtering
+- **Plugin Activity**: Individual plugin monitoring
+- **Error Tracking**: Error aggregation and analysis
+- **Performance Metrics**: System resource usage
+- **Export Options**: JSON and CSV log export
 
-1. **Closing the App**: 
-   - Press `Cmd + Q` (Mac) or `Ctrl + Q` (Windows/Linux) to quit
-   - Or use Activity Monitor/Task Manager to close `Interview Coder`
-   - The X button currently doesn't work (known issue)
-
-2. **If the app doesn't start**:
-   - Make sure no other app is using port 5180
-   - Try killing existing processes:
-     ```bash
-     # Find processes using port 5180
-     lsof -i :5180
-     # Kill them (replace [PID] with the process ID)
-     kill [PID]
-     ```
-   - For Ollama users: Make sure Ollama is running (`ollama serve`)
-
-3. **Keyboard Shortcuts**:
-   - `Cmd/Ctrl + B`: Toggle window visibility
-   - `Cmd/Ctrl + H`: Take screenshot
-   - 'Cmd/Enter': Get solution
-   - `Cmd/Ctrl + Arrow Keys`: Move window
+### Plugin Management
+- **Plugin Discovery**: Browse and install plugins
+- **Plugin Configuration**: Per-plugin settings
+- **Status Monitoring**: Running/stopped/error states
+- **Resource Usage**: Memory and CPU monitoring
+- **Plugin Lifecycle**: Start/stop/restart controls
 
 ## 🔧 Troubleshooting
 
-### Windows Issues Fixed 
-- **UI not loading**: Port mismatch resolved
-- **Electron crashes**: Improved error handling  
-- **Build failures**: Production config updated
-- **Window focus problems**: Platform-specific fixes applied
+### Common Issues
 
-### Ubuntu/Linux Issues Fixed 
-- **Window interaction**: Fixed focusable settings
-- **Installation confusion**: Clear setup instructions
-- **Missing dependencies**: All requirements documented
-
-### Common Solutions
-
-#### Sharp/Python Build Errors
-If you see `gyp ERR! find Python` or Sharp build errors:
+**Node.js Version**
 ```bash
-# Solution 1: Use prebuilt binaries
-rm -rf node_modules package-lock.json
-SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install --ignore-scripts
-npm rebuild sharp
-
-# Solution 2: Or install Python (if you prefer building from source)
-brew install python3  # macOS
-# Then run: npm install
+# Check Node.js version
+node --version
+# Must be 20.0.0 or higher
 ```
 
-#### General Installation Issues
-If you see other errors:
-1. Delete the `node_modules` folder
-2. Delete `package-lock.json` 
-3. Run `npm install` again
-4. Try running with `npm start`
-
-### Platform-Specific Notes
-- **Windows**: App now works on Windows 10/11
-- **Ubuntu/Linux**: Tested on Ubuntu 20.04+ and most Linux distros  
-- **macOS**: Native support with proper window management
-
-## Key Features
-
-### **Invisible AI Assistant**
-- Translucent, always-on-top window that's barely noticeable
-- Hide/show instantly with global hotkeys
-- Works seamlessly across all applications
-
-### **Smart Screenshot Analysis** 
-- Take screenshots of any content with `Cmd/Ctrl + H`
-- AI analyzes images, documents, presentations, or problems
-- Get instant explanations, answers, and solutions
-
-### **Audio Intelligence**
-- Process audio files and recordings
-- Real-time transcription and analysis
-- Perfect for meeting notes and content review
-
-### **Contextual Chat**
-- Chat with AI about anything you see on screen
-- Maintains conversation context
-- Ask follow-up questions for deeper insights
-
-### **Privacy-First Design**
-- **Local AI Option**: Use Ollama for 100% private processing
-- **Cloud Option**: Google Gemini for maximum performance
-- Screenshots auto-deleted after processing
-- No data tracking or storage
-
-### **Cross-Platform Support**
-- **Windows 10/11** - Full support with native performance
-- **Ubuntu/Linux** - Optimized for all major distributions  
-- **macOS** - Native window management and shortcuts
-
-## Use Cases
-
-### **Academic & Learning**
-```
-✓ Live presentation support during classes
-✓ Quick research during online exams  
-✓ Language translation and explanations
-✓ Math and science problem solving
-```
-
-### **Professional Meetings**
-```
-✓ Sales call preparation and objection handling
-✓ Technical interview coaching
-✓ Client presentation support
-✓ Real-time fact-checking and data lookup
-```
-
-### **Development & Tech**
-```
-✓ Debug error messages instantly
-✓ Code explanation and optimization
-✓ Documentation and API references
-✓ Algorithm and architecture guidance
-```
-
-## Why Choose Free Cluely?
-
-| Feature | Free Cluely | Commercial Alternatives |
-|---------|-------------|------------------------|
-| **Cost** | 100% Free | $29-99/month |
-| **Privacy** | Local AI Option | Cloud-only |
-| **Open Source** | Full transparency | Closed source |
-| **Customization** | Fully customizable | Limited options |
-| **Data Control** | You own your data | Third-party servers |
-| **Offline Mode** | Yes (with Ollama) | No |
-
-## Technical Details
-
-### **AI Models Supported**
-- **Gemini 2.0 Flash** - Latest Google AI with vision capabilities
-- **Llama 3.2** - Meta's advanced local model via Ollama
-- **CodeLlama** - Specialized coding assistance
-- **Mistral** - Lightweight, fast responses
-- **Custom Models** - Any Ollama-compatible model
-
-### **System Requirements**
+**PNPM Installation**
 ```bash
-Minimum:  4GB RAM, Dual-core CPU, 2GB storage
-Recommended: 8GB+ RAM, Quad-core CPU, 5GB+ storage
-Optimal: 16GB+ RAM for local AI models
+# Install PNPM globally
+npm install -g pnpm@latest
 ```
+
+**Build Failures**
+```bash
+# Clean and rebuild
+pnpm run clean:all
+pnpm run build
+```
+
+**Permission Issues**
+```bash
+# Fix script permissions
+chmod +x setup.sh
+chmod +x scripts/*.js
+```
+
+**Plugin Development**
+```bash
+# Build plugins only
+pnpm run build:plugins
+
+# Watch plugin changes
+cd plugins/your-plugin
+pnpm dev
+```
+
+### Getting Help
+
+- **Documentation**: [docs.free-cluely.com](https://docs.free-cluely.com)
+- **Issues**: [GitHub Issues](https://github.com/free-cluely/free-cluely/issues)
+- **Discord**: [Community Server](https://discord.gg/free-cluely)
+- **Discussions**: [GitHub Discussions](https://github.com/free-cluely/free-cluely/discussions)
 
 ## 🤝 Contributing
 
-This project welcomes contributions! While I have limited time for active maintenance, I'll review and merge quality PRs.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-**Ways to contribute:**
-- 🐛 Bug fixes and stability improvements
-- ✨ New features and AI model integrations  
-- 📚 Documentation and tutorial improvements
-- 🌍 Translations and internationalization
-- 🎨 UI/UX enhancements
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-For commercial integrations or custom development, reach out on [Twitter](https://x.com/prathitjoshi_)
+### Code Standards
+- TypeScript strict mode enabled
+- ESLint for code quality
+- Prettier for formatting
+- Conventional Commits
 
 ## 📄 License
 
-ISC License - Free for personal and commercial use.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Electron Team** for the amazing desktop framework
+- **Next.js Team** for the excellent React framework
+- **PNPM Team** for the fast package manager
+- **TypeScript Team** for type safety
+- **Community Contributors** for making this project better
 
 ---
 
-**⭐ Star this repo if Free Cluely helps you succeed in meetings, interviews, or presentations!**
+🚀 **Built with ❤️ by the Free-Cluely Team**
 
-### 🏷️ Tags
-`ai-assistant` `meeting-notes` `interview-helper` `presentation-support` `ollama` `gemini-ai` `electron-app` `cross-platform` `privacy-focused` `open-source` `local-ai` `screenshot-analysis` `academic-helper` `sales-assistant` `coding-companion`
+## 📘 Documentation
+
+- Product Requirements Document (PRD): [PRD.md](./PRD.md)
+- Implementation Tasks: [TASKS.md](./TASKS.md)

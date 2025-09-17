@@ -1,0 +1,29 @@
+{
+  "name": "@free-cluely/puppeteer-worker",
+  "version": "1.0.0",
+  "description": "Browser automation plugin for Free-Cluely with domain allowlist support",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "type-check": "tsc --noEmit",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@free-cluely/shared": "workspace:*",
+    "@free-cluely/plugin-bus": "workspace:*",
+    "puppeteer": "^23.6.1",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/uuid": "^9.0.8",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.6.3"
+  },
+  "keywords": ["puppeteer", "automation", "browser", "scraper"],
+  "author": "Free-Cluely Team",
+  "license": "MIT"
+}
