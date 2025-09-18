@@ -336,7 +336,7 @@ export class SearchService {
       highlights: this.generateHighlights(entries, query),
       scores,
       total: entries.length,
-      queryTime: 0, // TODO: measure actual time
+      queryTime: Date.now() - startTime,
     };
   }
 

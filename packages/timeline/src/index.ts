@@ -315,16 +315,34 @@ export class TimelineAPI {
 
     return {
       totalEntries: entries.pagination.total || 0,
-      cacheSize: 0, // TODO: implement cache size tracking
-      searchIndexSize: 0, // TODO: implement search index size tracking
+      cacheSize: this.calculateCacheSize(),
+      searchIndexSize: this.calculateSearchIndexSize(),
       activeExports,
-      activeSubscriptions: 0, // TODO: implement subscription tracking
+      activeSubscriptions: this.getActiveSubscriptions(),
     };
   }
 
   async clearCache(): Promise<void> {
-    // TODO: implement cache clearing
-    console.log('Cache cleared');
+    try {
+      // Clear in-memory cache
+      this.cache.clear();
+
+      // Clear search index cache
+      this.searchService.clearCache();
+
+      // Clear any stored cache data
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('timeline-cache');
+        localStorage.removeItem('timeline-search-cache');
+      }
+
+      // Clear file system cache if available
+      if (this.config.cache?.enabled && this.config.cache.ttl) {
+        // Cache will be automatically cleared on next access due to TTL
+      }
+    } catch (error) {
+      console.warn('Failed to clear cache:', error);
+    }
   }
 
   async getStatistics(): Promise<{
@@ -338,18 +356,44 @@ export class TimelineAPI {
       popularFormats: Array<{ format: string; count: number }>;
     };
   }> {
-    // TODO: implement statistics collection
-    return {
-      totalQueries: 0,
-      averageQueryTime: 0,
-      cacheHitRate: 0,
-      popularQueries: [],
-      exportStats: {
-        totalExports: 0,
-        averageExportTime: 0,
-        popularFormats: [],
-      },
-    };
+    try {
+      // Get search statistics
+      const searchStats = await this.searchService.getStatistics();
+
+      // Get export statistics
+      const exportJobs = await this.exportService.listExportJobs(1000);
+      const completedExports = exportJobs.filter(job => job.status === 'completed');
+
+      // Calculate export statistics
+      const exportStats = {
+        totalExports: exportJobs.length,
+        averageExportTime: completedExports.length > 0
+          ? completedExports.reduce((sum, job) => sum + (job.completedAt ? job.completedAt.getTime() - job.createdAt.getTime() : 0), 0) / completedExports.length
+          : 0,
+        popularFormats: this.getPopularFormats(exportJobs),
+      };
+
+      return {
+        totalQueries: searchStats.totalQueries,
+        averageQueryTime: searchStats.averageQueryTime,
+        cacheHitRate: searchStats.cacheHitRate,
+        popularQueries: searchStats.popularQueries,
+        exportStats,
+      };
+    } catch (error) {
+      console.warn('Failed to get statistics:', error);
+      return {
+        totalQueries: 0,
+        averageQueryTime: 0,
+        cacheHitRate: 0,
+        popularQueries: [],
+        exportStats: {
+          totalExports: 0,
+          averageExportTime: 0,
+          popularFormats: [],
+        },
+      };
+    }
   }
 
   // Configuration Methods
@@ -362,6 +406,61 @@ export class TimelineAPI {
   }
 
   // Private helper methods
+  private calculateCacheSize(): number {
+    try {
+      // Calculate in-memory cache size
+      let cacheSize = 0;
+      this.cache.forEach((value, key) => {
+        cacheSize += key.length + JSON.stringify(value).length;
+      });
+
+      // Add localStorage cache size if available
+      if (typeof localStorage !== 'undefined') {
+        const cacheData = localStorage.getItem('timeline-cache');
+        if (cacheData) {
+          cacheSize += cacheData.length;
+        }
+      }
+
+      return cacheSize; // Return size in bytes
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  private calculateSearchIndexSize(): number {
+    try {
+      // Calculate search index size based on the search service
+      return this.searchService.getIndexSize() || 0;
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  private getActiveSubscriptions(): number {
+    try {
+      // Count active event subscriptions
+      return this.eventListeners.size;
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  private getPopularFormats(exportJobs: any[]): Array<{ format: string; count: number }> {
+    const formatCounts = new Map<string, number>();
+
+    exportJobs.forEach(job => {
+      if (job.format) {
+        formatCounts.set(job.format, (formatCounts.get(job.format) || 0) + 1);
+      }
+    });
+
+    return Array.from(formatCounts.entries())
+      .map(([format, count]) => ({ format, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 formats
+  }
+
   private async initialize(): Promise<void> {
     // Initialize search index
     if (this.config.searchEnabled) {

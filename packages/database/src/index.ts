@@ -4,8 +4,11 @@ export { MigrationManager, MIGRATIONS } from './migrations';
 export { SCHEMA, SCHEMA_VERSION, TABLES, COLUMNS } from './schema';
 export { ArtifactStorage } from './ArtifactStorage';
 export { UsageTracker } from './UsageTracker';
+export { StorageManager } from './StorageManager';
 export { QueryEngine } from './QueryEngine';
 export { DatabaseService } from './DatabaseService';
+export { ImportExportService, ExportOptions, ImportOptions } from './ImportExportService';
+export { SchemaValidationService, ValidationConfig, ToastEvent } from './SchemaValidationService';
 
 // Repositories
 export { JobRepository } from './repositories/JobRepository';
@@ -36,6 +39,14 @@ export type {
   UsageStats,
   DatabaseConfig
 } from './types';
+
+// Storage Manager types
+export type {
+  StorageQuota,
+  StoragePathConfig,
+  StorageQuotaConfig,
+  StorageManagerConfig
+} from './StorageManager';
 
 export {
   JobTypeSchema,

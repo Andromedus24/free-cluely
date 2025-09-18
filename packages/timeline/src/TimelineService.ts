@@ -188,6 +188,7 @@ export class TimelineService {
   }
 
   async batchOperation(request: BatchOperationRequest): Promise<BatchOperationResponse> {
+    const startTime = Date.now();
     const success: boolean[] = [];
     const failed: Array<{ id: string; error: string }> = [];
 
@@ -204,7 +205,7 @@ export class TimelineService {
       success,
       failed,
       totalProcessed: request.entryIds.length,
-      operationTime: 0, // TODO: measure actual time
+      operationTime: Date.now() - startTime,
     };
   }
 

@@ -1,5 +1,6 @@
 import { DashboardState, DashboardConfig, DashboardEvent } from '@/types/dashboard';
 import { RealtimeUpdates } from '@/lib/realtime-updates';
+import { logger } from '@/lib/logger';
 
 export class DashboardService {
   private state: DashboardState;
@@ -69,7 +70,7 @@ export class DashboardService {
 
       this.emit('state_update', this.state);
     } catch (error) {
-      console.error('Failed to load initial dashboard data:', error);
+      logger.error('dashboard-service', 'Failed to load initial dashboard data', error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -226,7 +227,7 @@ export class DashboardService {
       this.realtimeUpdates.connect();
 
     } catch (error) {
-      console.error('Failed to setup real-time updates:', error);
+      logger.error('dashboard-service', 'Failed to setup real-time updates', error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -249,7 +250,7 @@ export class DashboardService {
     this.emit('state_update', this.state);
   }
 
-  private addActivityItem(item: any): void {
+  private addActivityItem(item: { id: string; action: string; timestamp: string | Date }): void {
     this.state.recentActivity.unshift({
       ...item,
       timestamp: new Date(item.timestamp)
@@ -261,7 +262,7 @@ export class DashboardService {
     }
   }
 
-  private updateJob(updatedJob: any): void {
+  private updateJob(updatedJob: { id: string; status: string; progress?: number }): void {
     const index = this.state.jobs.findIndex(job => job.id === updatedJob.id);
     if (index !== -1) {
       this.state.jobs[index] = { ...this.state.jobs[index], ...updatedJob };
@@ -282,7 +283,7 @@ export class DashboardService {
 
       this.emit('state_update', this.state);
     } catch (error) {
-      console.error('Failed to update dashboard state:', error);
+      logger.error('dashboard-service', 'Failed to update dashboard state', error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -327,7 +328,7 @@ export class DashboardService {
     }
   }
 
-  private emit(event: string, data: any): void {
+  private emit(event: string, data: unknown): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach(listener => listener(data));

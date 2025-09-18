@@ -1,4 +1,5 @@
 import { DashboardEvent } from '@/types/dashboard';
+import { logger } from '@/lib/logger';
 
 export interface RealtimeUpdateConfig {
   websocketUrl?: string;
@@ -34,7 +35,7 @@ export class RealtimeUpdates {
         this.reconnectAttempts = 0;
         this.startHeartbeat();
         this.emit('connected', { timestamp: new Date() });
-        console.log('Realtime updates connected');
+        logger.info('realtime-updates', 'Realtime updates connected');
       };
 
       this.websocket.onmessage = (event) => {
@@ -42,7 +43,7 @@ export class RealtimeUpdates {
           const data: DashboardEvent = JSON.parse(event.data);
           this.handleMessage(data);
         } catch (error) {
-          console.error('Failed to parse realtime message:', error);
+          logger.error('realtime-updates', 'Failed to parse realtime message', error instanceof Error ? error : new Error(String(error)));
         }
       };
 
@@ -54,12 +55,12 @@ export class RealtimeUpdates {
       };
 
       this.websocket.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        logger.error('realtime-updates', 'WebSocket error', error instanceof Error ? error : new Error(String(error)));
         this.emit('error', error);
       };
 
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
+      logger.error('realtime-updates', 'Failed to create WebSocket connection', error instanceof Error ? error : new Error(String(error)));
       this.attemptReconnect();
     }
   }
@@ -130,11 +131,11 @@ export class RealtimeUpdates {
     }
   }
 
-  send(data: any): void {
+  send(data: Record<string, unknown>): void {
     if (this.isConnected && this.websocket) {
       this.websocket.send(JSON.stringify(data));
     } else {
-      console.warn('Cannot send message: WebSocket not connected');
+      logger.warn('realtime-updates', 'Cannot send message: WebSocket not connected');
     }
   }
 
@@ -156,7 +157,7 @@ export class RealtimeUpdates {
     }
   }
 
-  private emit(event: string, data: any): void {
+  private emit(event: string, data: unknown): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach(listener => listener(data));

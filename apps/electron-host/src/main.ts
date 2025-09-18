@@ -106,13 +106,13 @@ function createTray(): void {
   
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Show Free-Cluely',
+      label: 'Show Atlas',
       click: () => {
         mainWindow.show();
       }
     },
     {
-      label: 'Hide Free-Cluely',
+      label: 'Hide Atlas',
       click: () => {
         mainWindow.hide();
       }
@@ -138,7 +138,7 @@ function createTray(): void {
   ]);
   
   tray.setContextMenu(contextMenu);
-  tray.setToolTip('Free-Cluely - AI Assistant');
+  tray.setToolTip('Atlas: All in one assistant');
   
   // Show window on tray icon click
   tray.on('click', () => {
@@ -217,24 +217,24 @@ function setupAppMenu(): void {
         {
           label: 'Documentation',
           click: () => {
-            require('electron').shell.openExternal('https://docs.free-cluely.com');
+            require('electron').shell.openExternal('https://docs.atlas-assistant.com');
           }
         },
         {
           label: 'Report Issue',
           click: () => {
-            require('electron').shell.openExternal('https://github.com/free-cluely/free-cluely/issues');
+            require('electron').shell.openExternal('https://github.com/Andromedus24/free-cluely/issues');
           }
         },
         { type: 'separator' },
         {
-          label: 'About Free-Cluely',
+          label: 'About Atlas',
           click: () => {
             require('electron').dialog.showMessageBox(mainWindow, {
               type: 'info',
-              title: 'About Free-Cluely',
-              message: 'Free-Cluely',
-              detail: `Version: ${app.getVersion()}\nAI-powered desktop assistant with plugin architecture`
+              title: 'About Atlas',
+              message: 'Atlas: All in one assistant',
+              detail: `Version: ${app.getVersion()}\nAll-in-one personal assistant`
             });
           }
         }

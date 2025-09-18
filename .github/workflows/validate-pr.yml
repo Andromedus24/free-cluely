@@ -1,0 +1,179 @@
+name: Validate Pull Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate PR
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'pnpm'
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: '8'
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Validate package.json
+      run: |
+        # Check if package.json is valid
+        cat package.json | jq . > /dev/null
+
+        # Check if all scripts exist
+        if ! jq -e '.scripts.build' package.json > /dev/null; then
+          echo "Error: build script is missing from package.json"
+          exit 1
+        fi
+
+        if ! jq -e '.scripts.test' package.json > /dev/null; then
+          echo "Error: test script is missing from package.json"
+          exit 1
+        fi
+
+        if ! jq -e '.scripts.lint' package.json > /dev/null; then
+          echo "Error: lint script is missing from package.json"
+          exit 1
+        fi
+
+    - name: Validate TypeScript configuration
+      run: |
+        # Check if tsconfig.json exists and is valid
+        if [ ! -f "tsconfig.json" ]; then
+          echo "Error: tsconfig.json is missing"
+          exit 1
+        fi
+
+        cat tsconfig.json | jq . > /dev/null
+
+    - name: Validate ESLint configuration
+      run: |
+        # Check if .eslintrc.js exists
+        if [ ! -f ".eslintrc.js" ]; then
+          echo "Warning: .eslintrc.js is missing"
+        fi
+
+    - name: Check for type errors
+      run: pnpm run type-check
+
+    - name: Run linting
+      run: pnpm run lint
+
+    - name: Run tests
+      run: pnpm run test
+      env:
+        NODE_ENV: test
+
+    - name: Check build process
+      run: |
+        pnpm run build:packages
+        pnpm run build:dashboard
+
+    - name: Check for security vulnerabilities
+      run: |
+        pnpm audit --audit-level moderate || true
+        npm audit --audit-level moderate || true
+
+    - name: Validate dependencies
+      run: |
+        # Check for duplicate dependencies
+        pnpm dedupe
+
+        # Check for unused dependencies
+        npx depcheck || true
+
+    - name: Check file sizes
+      run: |
+        # Check for large files that might affect performance
+        find . -type f -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" | head -20 | while read file; do
+          if [ -f "$file" ] && [ $(wc -l < "$file") -gt 1000 ]; then
+            echo "Warning: Large file detected: $file ($(wc -l < "$file") lines)"
+          fi
+        done
+
+    - name: Check for TODO comments
+      run: |
+        # Check for TODO/FIXME comments that should be addressed
+        TODO_COUNT=$(find . -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" | xargs grep -l "TODO\|FIXME" | wc -l)
+        echo "Found $TODO_COUNT files with TODO/FIXME comments"
+
+        if [ $TODO_COUNT -gt 10 ]; then
+          echo "Warning: High number of TODO/FIXME comments ($TODO_COUNT)"
+        fi
+
+    - name: Validate PR description
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { context } = require('@actions/github')
+
+          const prBody = context.payload.pull_request.body || ''
+          const prTitle = context.payload.pull_request.title || ''
+
+          // Check if PR has a description
+          if (prBody.length < 50) {
+            core.setFailed('PR description is too short. Please provide a detailed description of your changes.')
+            return
+          }
+
+          // Check if PR follows conventional commit format
+          const conventionalCommitRegex = /^(feat|fix|docs|style|refactor|test|chore|perf)(\(.+\))?: .+$/
+          if (!conventionalCommitRegex.test(prTitle)) {
+            core.warning('PR title does not follow conventional commit format. Consider using: feat, fix, docs, style, refactor, test, chore, or perf')
+          }
+
+    - name: Check for breaking changes
+      run: |
+        # Check for files that might indicate breaking changes
+        BREAKING_FILES=$(find . -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" | xargs grep -l "BREAKING CHANGE\|BREAKING" | wc -l)
+
+        if [ $BREAKING_FILES -gt 0 ]; then
+          echo "Warning: Found $BREAKING_FILES files with breaking changes"
+          echo "Please ensure breaking changes are properly documented"
+        fi
+
+    - name: Comment on PR with validation results
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { context } = require('@actions/github')
+
+          const comment = `
+          ## 🔍 PR Validation Results
+
+          ✅ **TypeScript validation passed**
+          ✅ **Linting passed**
+          ✅ **Tests passed**
+          ✅ **Build successful**
+          ✅ **Security scan completed**
+
+          This PR has been automatically validated and is ready for review.
+
+          Please ensure:
+          - [ ] All tests are passing
+          - [ ] Code follows the project's style guide
+          - [ ] Documentation is updated if necessary
+          - [ ] Breaking changes are properly documented
+          `
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          })

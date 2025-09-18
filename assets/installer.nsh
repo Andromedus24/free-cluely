@@ -1,20 +1,20 @@
-; Windows installer script for Free-Cluely
+; Windows installer script for Atlas: All in one assistant
 
 [Setup]
-AppId=com.freecluely.app
-AppName=Free-Cluely
+AppId=com.atlas.assistant
+AppName=Atlas: All in one assistant
 AppVersion={#MyAppVersion}
-AppPublisher=Free-Cluely Team
-AppPublisherURL=https://free-cluely.com
-AppSupportURL=https://free-cluely.com/support
-AppUpdatesURL=https://free-cluely.com/updates
-DefaultDirName={autopf}\Free-Cluely
-DefaultGroupName=Free-Cluely
+AppPublisher=Ronak Prabhu
+AppPublisherURL=https://atlas-assistant.com
+AppSupportURL=https://atlas-assistant.com/support
+AppUpdatesURL=https://atlas-assistant.com/updates
+DefaultDirName={autopf}\Atlas Assistant
+DefaultGroupName=Atlas Assistant
 AllowNoIcons=yes
 LicenseFile=LICENSE.txt
 InfoBeforeFile=README.txt
 OutputDir=release
-OutputBaseFilename=free-cluely-{#MyAppVersion}-setup
+OutputBaseFilename=atlas-assistant-{#MyAppVersion}-setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -36,19 +36,19 @@ Source: "{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Free-Cluely"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\{cm:UninstallProgram,Free-Cluely}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\Free-Cluely"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Free-Cluely"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon
+Name: "{group}\Atlas Assistant"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{cm:UninstallProgram,Atlas Assistant}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\Atlas Assistant"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Atlas Assistant"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,Free-Cluely}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,Atlas Assistant}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
 
 [Registry]
-Root: HKCU; Subkey: "Software\Free-Cluely"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Atlas Assistant"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"; Flags: uninsdeletekey
 
 [Code]
 // Check if .NET Desktop Runtime is installed
@@ -66,7 +66,7 @@ function InitializeSetup(): Boolean;
 begin
   if not IsDotNetInstalled then
   begin
-    MsgBox('.NET Desktop Runtime 6.0 or later is required to run Free-Cluely.' + #13#13 +
+    MsgBox('.NET Desktop Runtime 6.0 or later is required to run Atlas Assistant.' + #13#13 +
            'Please install .NET Desktop Runtime from https://dotnet.microsoft.com/download and run the setup again.',
            mbError, MB_OK);
     Result := False;

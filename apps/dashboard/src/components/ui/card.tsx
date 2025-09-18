@@ -1,20 +1,33 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 
 const Card = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    )}
-    {...props}
-  />
-))
+  React.HTMLAttributes<HTMLDivElement> & {
+    hover?: boolean
+    interactive?: boolean
+  }
+>(({ className, hover = false, interactive = false, ...props }, ref) => {
+  const { prefersReducedMotion } = useReducedMotion()
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "rounded-lg border bg-card text-card-foreground transition-all duration-200",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        hover && !prefersReducedMotion && "hover:shadow-md hover:scale-[1.02]",
+        interactive && "cursor-pointer",
+        hover && prefersReducedMotion && "hover:shadow-sm",
+        className
+      )}
+      tabIndex={interactive ? 0 : undefined}
+      {...props}
+    />
+  )
+})
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<

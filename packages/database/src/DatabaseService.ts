@@ -3,6 +3,9 @@ import { DatabaseManager } from './DatabaseManager';
 import { ArtifactStorage, ArtifactStorageConfig } from './ArtifactStorage';
 import { UsageTracker, UsageTrackerConfig } from './UsageTracker';
 import { QueryEngine } from './QueryEngine';
+import { StorageManager, StorageManagerConfig } from './StorageManager';
+import { ImportExportService, ExportOptions, ImportOptions } from './ImportExportService';
+import { SchemaValidationService, ValidationConfig } from './SchemaValidationService';
 import { JobRepository } from './repositories/JobRepository';
 import { ArtifactRepository } from './repositories/ArtifactRepository';
 import { SessionRepository } from './repositories/SessionRepository';
@@ -29,16 +32,21 @@ export interface DatabaseServiceConfig {
   database?: DatabaseConfig;
   artifactStorage?: Partial<ArtifactStorageConfig>;
   usageTracker?: Partial<UsageTrackerConfig>;
+  storageManager?: Partial<StorageManagerConfig>;
+  validation?: Partial<ValidationConfig>;
 }
 
 export class DatabaseService {
   private dbManager: DatabaseManager;
   private artifactStorage: ArtifactStorage;
   private usageTracker: UsageTracker;
+  private storageManager: StorageManager;
   private queryEngine: QueryEngine;
   private jobRepository: JobRepository;
   private artifactRepository: ArtifactRepository;
   private sessionRepository: SessionRepository;
+  private importExportService: ImportExportService;
+  private schemaValidationService: SchemaValidationService;
 
   constructor(config: DatabaseServiceConfig = {}) {
     // Initialize database manager
@@ -46,6 +54,9 @@ export class DatabaseService {
 
     // Get database instance
     const db = this.dbManager.getDatabase();
+
+    // Initialize storage manager first (needed by artifact storage)
+    this.storageManager = new StorageManager(config.storageManager);
 
     // Initialize artifact storage
     this.artifactStorage = new ArtifactStorage(db, config.artifactStorage);
@@ -60,6 +71,12 @@ export class DatabaseService {
     this.jobRepository = new JobRepository(db);
     this.artifactRepository = new ArtifactRepository(db, this.artifactStorage);
     this.sessionRepository = new SessionRepository(db);
+
+    // Initialize validation service
+    this.schemaValidationService = new SchemaValidationService(config.validation);
+
+    // Note: ImportExportService will be initialized later with SecureStorage dependency
+    // This is because SecureStorage is in the @atlas/core package
   }
 
   async initialize(): Promise<void> {
@@ -242,26 +259,55 @@ export class DatabaseService {
     return this.dbManager.getStats();
   }
 
+  // Storage Management Operations
+  async getStorageQuota() {
+    return await this.storageManager.getStorageQuota();
+  }
+
+  async getStorageHealth() {
+    return await this.storageManager.getStorageHealth();
+  }
+
+  async getStoragePaths() {
+    return await this.storageManager.getStoragePaths();
+  }
+
+  async validateStorageAvailable(size: number, type: 'artifact' | 'temp' | 'backup' = 'artifact') {
+    return await this.storageManager.validateStorageAvailable(size, type);
+  }
+
+  async runStorageCleanup() {
+    return await this.storageManager.runCleanup();
+  }
+
+  async updateStorageQuota(newConfig: any) {
+    return await this.storageManager.updateQuotaConfig(newConfig);
+  }
+
   // Cleanup operations
   async cleanup(): Promise<{
     expiredArtifacts: { deletedCount: number; freedSpace: number };
     oldJobs: { deletedCount: number; deletedJobs: Job[] };
     inactiveSessions: { deletedCount: number; deletedSessions: Session[] };
+    storageCleanup: any;
   }> {
-    const results = await Promise.allSettled([
+    const [artifactResult, jobResult, sessionResult, storageResult] = await Promise.allSettled([
       this.artifactRepository.cleanupExpiredArtifacts(),
       this.jobRepository.cleanupOldJobs(30),
-      this.sessionRepository.cleanupInactiveSessions(30)
+      this.sessionRepository.cleanupInactiveSessions(30),
+      this.storageManager.runCleanup()
     ]);
 
-    const expiredArtifacts = results[0].status === 'fulfilled' ? results[0].value : { deletedCount: 0, freedSpace: 0 };
-    const oldJobs = results[1].status === 'fulfilled' ? results[1].value : { deletedCount: 0, deletedJobs: [] };
-    const inactiveSessions = results[2].status === 'fulfilled' ? results[2].value : { deletedCount: 0, deletedSessions: [] };
+    const expiredArtifacts = artifactResult.status === 'fulfilled' ? artifactResult.value : { deletedCount: 0, freedSpace: 0 };
+    const oldJobs = jobResult.status === 'fulfilled' ? jobResult.value : { deletedCount: 0, deletedJobs: [] };
+    const inactiveSessions = sessionResult.status === 'fulfilled' ? sessionResult.value : { deletedCount: 0, deletedSessions: [] };
+    const storageCleanup = storageResult.status === 'fulfilled' ? storageResult.value : { deletedFiles: 0, freedSpace: 0 };
 
     return {
       expiredArtifacts,
       oldJobs,
-      inactiveSessions
+      inactiveSessions,
+      storageCleanup
     };
   }
 
@@ -296,6 +342,7 @@ export class DatabaseService {
       // Stop background tasks
       this.usageTracker.stop();
       this.artifactStorage.stopAutoCleanup();
+      this.storageManager.stopAutoCleanup();
 
       // Close database
       await this.dbManager.close();
@@ -338,5 +385,70 @@ export class DatabaseService {
 
   getArtifactStorage(): ArtifactStorage {
     return this.artifactStorage;
+  }
+
+  getStorageManager(): StorageManager {
+    return this.storageManager;
+  }
+
+  // Import/Export methods
+  async initializeImportExport(secureStorage: any): Promise<void> {
+    // Initialize the import/export service with SecureStorage
+    this.importExportService = new ImportExportService(this, secureStorage);
+  }
+
+  async exportData(options: ExportOptions = {}): Promise<string> {
+    if (!this.importExportService) {
+      throw new DatabaseError('ImportExportService not initialized. Call initializeImportExport() first.');
+    }
+    return await this.importExportService.exportData(options);
+  }
+
+  async importData(data: string, options: ImportOptions = {}) {
+    if (!this.importExportService) {
+      throw new DatabaseError('ImportExportService not initialized. Call initializeImportExport() first.');
+    }
+    return await this.importExportService.importData(data, options);
+  }
+
+  async getExportTemplate(): Promise<string> {
+    if (!this.importExportService) {
+      throw new DatabaseError('ImportExportService not initialized. Call initializeImportExport() first.');
+    }
+    return await this.importExportService.getExportTemplate();
+  }
+
+  // Schema validation methods
+  async validateJob(job: any, schema?: any): Promise<any> {
+    return await this.schemaValidationService.validateJob(job, schema);
+  }
+
+  async validateBatch(items: any[], itemType: 'job' | 'artifact' | 'session'): Promise<any> {
+    return await this.schemaValidationService.validateBatch(items, itemType);
+  }
+
+  async validateArtifact(artifact: any): Promise<any> {
+    return await this.schemaValidationService.validateArtifact(artifact);
+  }
+
+  async validateSession(session: any): Promise<any> {
+    return await this.schemaValidationService.validateSession(session);
+  }
+
+  async autoFix(item: any, itemType: 'job' | 'artifact' | 'session'): Promise<{ fixed: boolean; changes: string[] }> {
+    return await this.schemaValidationService.autoFix(item, itemType);
+  }
+
+  // Validation configuration
+  updateValidationConfig(config: Partial<ValidationConfig>): void {
+    this.schemaValidationService.updateConfig(config);
+  }
+
+  getValidationConfig(): ValidationConfig {
+    return this.schemaValidationService.getConfig();
+  }
+
+  getValidationStats(): any {
+    return this.schemaValidationService.getValidationStats();
   }
 }

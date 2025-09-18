@@ -1,0 +1,41 @@
+{
+  "name": "@atlas/observability",
+  "version": "1.0.0",
+  "description": "Enterprise-grade observability framework for Atlas AI assistant",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "observability",
+    "monitoring",
+    "tracing",
+    "metrics",
+    "logging",
+    "alerting",
+    "performance",
+    "atlas"
+  ],
+  "author": "Atlas Team",
+  "license": "MIT",
+  "dependencies": {
+    "events": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

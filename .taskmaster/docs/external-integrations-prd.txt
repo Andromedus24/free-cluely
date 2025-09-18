@@ -1,0 +1,54 @@
+<context>
+This PRD defines integration tasks for incorporating selected aspects from five external codebases into the Atlas project without breaking existing architecture.
+- External sources: @tango-main, @hackthenorth-main, @SigmaScholar-main, @Stray-Sender-main, @shapeshift-main
+- Constraints: Maintain plugin-bus architecture, provider adapters, job/timeline backbone, Electron capture overlay, and Next.js dashboard. Favor composition over fork/replace.
+- Deliverables: Source-specific integration shims/adapters, UI themes/tokens/components alignment, data/connector bridges, automation flows, tests, and migration documentation.
+</context>
+<PRD>
+# External Integrations Overview
+Goal: Reuse production-ready patterns from five codebases while preserving Atlas’ modular design and constraints. Scope includes design tokens/themes, UI components, connectors/SDKs, automation flows, and data models where applicable.
+
+# Integration Initiatives
+
+## 1) @tango-main — Design tokens and theming
+- Extract design tokens, palettes, and typography primitives
+- Map tokens into Atlas theming system (shadcn/ui + Tailwind CSS + theme provider)
+- Provide a non-destructive theme pack selectable at runtime
+- Validate contrast and accessibility; dark/light parity
+
+## 2) @hackthenorth-main — Event flows and quick actions
+- Analyze event/workflow primitives (e.g., schedules, sessions, quick actions)
+- Adapt as reusable Quick Actions in overlay and dashboard
+- Define schemas for events/jobs, persistence in job store
+- Wire keyboard shortcuts and permissions
+
+## 3) @SigmaScholar-main — Knowledge widgets and datasets
+- Identify knowledge widgets (notes, references, datasets)
+- Add dataset ingestion presets and schema mapping
+- Create widgets backed by timeline/jobs and datasets
+- Add tests for data integrity, filters, and exports
+
+## 4) @Stray-Sender-main — Messaging/automation bridges
+- Extract messaging pipeline surfaces (email/webhook templates, retry/backoff)
+- Wrap into Automation plugin actions with allowlist enforcement
+- Add audit logs, event exports, and artifact attachments
+- Provide E2E scenario and fixtures
+
+## 5) @shapeshift-main — Dynamic layout and presets
+- Evaluate layout/preset system; map to Atlas Boards & Widgets
+- Add import/export of layout presets and TV mode compatibility
+- Persist presets per board; add schema validation and error toasts
+- Add tests for drag/drop/resize persistence
+
+# Dependencies & Guardrails
+- No breaking changes to provider adapters, plugin-bus contracts, or job store schema without migrations
+- All new code behind feature flags or tags; reversible
+- Unit/integration tests for each integration path
+
+# Success Criteria
+- Theming: selectable themes with AA contrast; no regressions
+- Automation/messaging: allowlist + audit trail; retries observed
+- Datasets/widgets: validated schemas; filters <300ms p95 on sample data
+- Layout presets: persisted and restorable across sessions
+</PRD>
+

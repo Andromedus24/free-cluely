@@ -48,6 +48,11 @@ export interface DashboardConfig {
 
 export interface DashboardEvent {
   type: 'stats_update' | 'activity_update' | 'health_update' | 'job_update';
-  data: any;
+  data:
+    | { stats: Record<string, number>; timestamp: Date }
+    | { activities: Array<{ id: string; action: string; timestamp: Date }> }
+    | { health: { status: string; metrics: Record<string, number> } }
+    | { jobs: Array<{ id: string; status: string; progress: number }> }
+    | Record<string, unknown>;
   timestamp: Date;
 }

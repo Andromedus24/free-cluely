@@ -179,8 +179,8 @@ export default function OverlayPage({
 declare global {
   interface Window {
     electronAPI?: {
-      send: (channel: string, data?: any) => void;
-      invoke: (channel: string, data?: any) => Promise<any>;
+      send: (channel: string, data?: Record<string, unknown>) => void;
+      invoke: (channel: string, data?: Record<string, unknown>) => Promise<unknown>;
       on: (channel: string, callback: Function) => void;
       off: (channel: string, callback: Function) => void;
     };

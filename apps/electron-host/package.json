@@ -1,7 +1,7 @@
 {
   "name": "@free-cluely/electron-host",
   "version": "1.0.0",
-  "description": "Electron host application for Free-Cluely",
+  "description": "Electron host application for Atlas: All in one assistant",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc",
@@ -27,6 +27,6 @@
     "typescript": "^5.6.3"
   },
   "keywords": ["electron", "desktop", "ai", "assistant"],
-  "author": "Free-Cluely Team",
+  "author": "Ronak Prabhu",
   "license": "MIT"
 }

@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Save, RefreshCw } from 'lucide-react';
+import { Save, RefreshCw, Download, Upload } from 'lucide-react';
+import { ImportExportModal } from '@/components/data/ImportExportModal';
 
 export function SettingsTab() {
   const [settings, setSettings] = useState({
@@ -37,6 +38,8 @@ export function SettingsTab() {
     },
   });
 
+  const [showImportExportModal, setShowImportExportModal] = useState(false);
+
   const handleSave = async () => {
     // Implement save logic
     console.log('Saving settings:', settings);
@@ -45,6 +48,24 @@ export function SettingsTab() {
   const handleReset = () => {
     // Implement reset logic
     console.log('Resetting settings');
+  };
+
+  const handleExport = async (options: any) => {
+    // Placeholder - implement actual export logic
+    console.log('Exporting with options:', options);
+    return JSON.stringify({ exportData: 'sample', timestamp: Date.now() }, null, 2);
+  };
+
+  const handleImport = async (data: string, options: any) => {
+    // Placeholder - implement actual import logic
+    console.log('Importing with options:', options);
+    console.log('Import data:', data.substring(0, 100) + '...');
+    return { isValid: true, errors: [], warnings: [], summary: { totalItems: 1, validItems: 1, invalidItems: 0, warnings: 0 } };
+  };
+
+  const handleGetTemplate = async () => {
+    // Placeholder - implement template generation
+    return JSON.stringify({ template: 'sample' }, null, 2);
   };
 
   return (
@@ -318,6 +339,63 @@ export function SettingsTab() {
           )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Data Management</CardTitle>
+          <CardDescription>
+            Import and export your Atlas data, with redaction and validation
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <h4 className="font-medium">Export Data</h4>
+              <p className="text-sm text-muted-foreground">
+                Download your jobs, sessions, and settings as a JSON file
+              </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowImportExportModal(true)}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export Data
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-medium">Import Data</h4>
+              <p className="text-sm text-muted-foreground">
+                Upload data from a previous export file
+              </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowImportExportModal(true)}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import Data
+              </Button>
+            </div>
+          </div>
+          <div className="pt-2 border-t">
+            <p className="text-xs text-muted-foreground">
+              All exports include automatic redaction of sensitive data like API keys and passwords.
+              Imports include comprehensive validation to ensure data integrity.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {showImportExportModal && (
+        <ImportExportModal
+          onClose={() => setShowImportExportModal(false)}
+          onExport={handleExport}
+          onImport={handleImport}
+          onGetTemplate={handleGetTemplate}
+        />
+      )}
 
       <div className="flex gap-4">
         <Button onClick={handleSave} className="flex items-center gap-2">

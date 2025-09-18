@@ -1,43 +1,41 @@
 "use client";
 
-import React from 'react';
-import { DashboardProvider } from '@/contexts/DashboardContext';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { StatsOverview, DetailedStats } from '@/components/dashboard/StatsOverview';
-import { JobManagement } from '@/components/dashboard/JobManagement';
-import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
-import { QuickActions, RecentActions } from '@/components/dashboard/QuickActions';
-
-function DashboardContent() {
-  return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {/* Stats Overview */}
-        <StatsOverview />
-
-        {/* Quick Actions and Recent Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <QuickActions />
-          <RecentActions />
-        </div>
-
-        {/* Detailed Stats */}
-        <DetailedStats />
-
-        {/* Job Management and Activity Feed */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <JobManagement />
-          <ActivityFeed />
-        </div>
-      </div>
-    </DashboardLayout>
-  );
-}
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/services/auth-service';
 
 export default function DashboardPage() {
-  return (
-    <DashboardProvider>
-      <DashboardContent />
-    </DashboardProvider>
-  );
+  const router = useRouter();
+  const { isAuthenticated, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading) {
+      if (!isAuthenticated) {
+        router.push('/login');
+      } else {
+        router.push('/dashboard/main');
+      }
+    }
+  }, [isAuthenticated, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
+          <p className="text-muted-foreground mb-4">Please login to access the dashboard</p>
+        </div>
+      </div>
+    );
+  }
+
+  return null; // Will redirect to /dashboard/main
 }

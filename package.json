@@ -29,12 +29,24 @@
     "dist:win": "npm run build && electron-builder --win --publish=never",
     "dist:linux": "npm run build && electron-builder --linux --publish=never",
     "clean": "turbo run clean",
-    "clean:all": "rimraf node_modules dist release .next out apps/*/dist apps/*/.next packages/*/dist plugins/*/dist",
+    "clean:all": "rimraf node_modules dist release .next out apps/*/dist apps/*/.next packages/*/dist plugins/*/dist coverage playwright-report playwright-report",
     "lint": "turbo run lint",
+    "lint:fix": "turbo run lint --fix",
     "type-check": "turbo run type-check",
     "test": "turbo run test",
+    "test:watch": "turbo run test --watch",
+    "test:coverage": "turbo run test --coverage",
+    "test:ci": "turbo run test --ci --coverage --maxWorkers=2",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:validation": "cd apps/dashboard && npx tsx src/lib/validation-test.ts",
+    "test:performance": "lighthouse http://localhost:3000 --output=html --output-path=./lighthouse-results",
+    "test:security": "npm audit && snyk test",
     "install:all": "pnpm install && pnpm run build:packages",
-    "setup:dev": "pnpm install:all && pnpm run build:packages"
+    "setup:dev": "pnpm install:all && pnpm run build:packages",
+    "setup:test": "pnpm install:all && pnpm run build:packages && npx playwright install",
+    "validate:pr": "pnpm run type-check && pnpm run lint && pnpm run test:ci && pnpm run test:e2e"
   },
   "keywords": [
     "ai",
@@ -47,16 +59,29 @@
     "puppeteer",
     "ocr"
   ],
-  "author": "Free-Cluely Team",
+  "author": "Ronak Prabhu",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^15.0.7",
+    "@testing-library/user-event": "^14.5.1",
+    "@types/jest": "^29.5.8",
+    "@types/node": "^24.5.1",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "babel-jest": "^29.7.0",
     "concurrently": "^9.1.0",
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
     "framer-motion": "^11.11.17",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jest-watch-typeahead": "^2.2.2",
     "rimraf": "^6.0.1",
     "tailwindcss-animate": "^1.0.7",
     "turbo": "^2.2.3",
+    "typescript": "^5.9.2",
     "wait-on": "^8.0.1"
   },
   "dependencies": {
@@ -66,11 +91,12 @@
     "@radix-ui/react-scroll-area": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.2",
     "@types/node": "^24.5.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "zod": "^4.1.9"
   },
   "build": {
-    "appId": "com.freecluely.app",
-    "productName": "Free-Cluely",
+    "appId": "com.atlas.assistant",
+    "productName": "Atlas: All in one assistant",
     "directories": {
       "output": "release",
       "buildResources": "assets"
@@ -125,7 +151,7 @@
         }
       ],
       "icon": "assets/icons/win/icon.ico",
-      "publisherName": "Free-Cluely Team",
+      "publisherName": "Ronak Prabhu",
       "verifyUpdateCodeSignature": false
     },
     "linux": {
@@ -152,11 +178,11 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Free-Cluely",
+      "shortcutName": "Atlas: All in one assistant",
       "include": "assets/installer.nsh"
     },
     "dmg": {
-      "title": "Free-Cluely ${version}",
+      "title": "Atlas: All in one assistant ${version}",
       "icon": "assets/icons/mac/icon.icns",
       "background": "assets/dmg-background.png",
       "window": {
