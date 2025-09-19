@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { z } from 'zod';
 import { SecureStorage, Settings } from './SecureStorage';
-import { ProviderConfig } from '@atlas/adapters';
+import { ProviderConfig } from '@free-cluely/adapters';
 
 // IPC message schemas
 const IPCMessageSchema = z.object({

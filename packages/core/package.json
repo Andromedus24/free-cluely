@@ -1,5 +1,5 @@
 {
-  "name": "@atlas/core",
+  "name": "@free-cluely/core",
   "version": "1.0.0",
   "description": "Core services for Atlas including secure storage, IPC, and database",
   "main": "dist/index.js",
@@ -12,8 +12,8 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@atlas/shared": "workspace:*",
-    "@atlas/adapters": "workspace:*",
+    "@free-cluely/shared": "workspace:*",
+    "@free-cluely/adapters": "workspace:*",
     "keytar": "^7.9.0",
     "sqlite3": "^5.1.6",
     "zod": "^3.22.4",

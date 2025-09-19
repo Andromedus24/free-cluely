@@ -28,7 +28,7 @@
     "dist:mac": "npm run build && electron-builder --mac --publish=never",
     "dist:win": "npm run build && electron-builder --win --publish=never",
     "dist:linux": "npm run build && electron-builder --linux --publish=never",
-    "clean": "turbo run clean",
+    "clean": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" --filter \"./plugins/*\" run clean",
     "clean:all": "rimraf node_modules dist release .next out apps/*/dist apps/*/.next packages/*/dist plugins/*/dist coverage playwright-report playwright-report",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint --fix",

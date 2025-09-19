@@ -1,5 +1,5 @@
 {
-  "name": "@atlas/adapters",
+  "name": "@free-cluely/adapters",
   "version": "1.0.0",
   "description": "Multi-provider LLM adapters for Atlas",
   "main": "dist/index.js",
@@ -16,7 +16,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@atlas/shared": "workspace:*",
+    "@free-cluely/shared": "workspace:*",
     "openai": "^4.28.0",
     "anthropic": "^0.19.2",
     "@google/generative-ai": "^0.5.2",

@@ -22,9 +22,6 @@
       "outputs": [],
       "dependsOn": ["^build"]
     },
-    "clean": {
-      "cache": false
-    },
     "format": {
       "outputs": []
     },

@@ -1,136 +1,150 @@
-#!/usr/bin/env node
+#!/bin/bash
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+# Free-Cluely Development Setup Script
+# This script sets up the development environment for Free-Cluely
 
-console.log('🚀 Setting up Free-Cluely development environment...');
+set -e  # Exit on any error
 
-// Check Node.js version
-const nodeVersion = process.version;
-const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
+echo "🚀 Setting up Free-Cluely development environment..."
 
-if (majorVersion < 20) {
-  console.error('❌ Node.js 20+ is required. Current version:', nodeVersion);
-  process.exit(1);
-}
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-console.log('✅ Node.js version check passed:', nodeVersion);
+# Function to print colored output
+print_success() { echo -e "${GREEN}✅ $1${NC}"; }
+print_error() { echo -e "${RED}❌ $1${NC}"; }
+print_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
+print_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
 
-// Check if pnpm is installed
-try {
-  execSync('pnpm --version', { stdio: 'pipe' });
-  console.log('✅ PNPM is installed');
-} catch (error) {
-  console.error('❌ PNPM is not installed. Please install PNPM:');
-  console.error('   npm install -g pnpm');
-  process.exit(1);
-}
+# Check Node.js version
+echo "🔍 Checking Node.js version..."
+if ! command -v node &> /dev/null; then
+    print_error "Node.js is not installed. Please install Node.js 20+ from https://nodejs.org/"
+    exit 1
+fi
 
-// Install dependencies
-console.log('📦 Installing dependencies...');
-try {
-  execSync('pnpm install', { stdio: 'inherit' });
-  console.log('✅ Dependencies installed successfully');
-} catch (error) {
-  console.error('❌ Failed to install dependencies:', error.message);
-  process.exit(1);
-}
+NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
+if [ "$NODE_VERSION" -lt 20 ]; then
+    print_error "Node.js 20+ is required. Current version: $(node --version)"
+    print_info "Please update Node.js from https://nodejs.org/"
+    exit 1
+fi
 
-// Build packages
-console.log('🔨 Building packages...');
-try {
-  execSync('pnpm run build:packages', { stdio: 'inherit' });
-  console.log('✅ Packages built successfully');
-} catch (error) {
-  console.error('❌ Failed to build packages:', error.message);
-  process.exit(1);
-}
+print_success "Node.js version check passed: $(node --version)"
 
-// Create .env file if it doesn't exist
-const envPath = path.resolve('.env');
-const envExamplePath = path.resolve('.env.example');
+# Check if PNPM is installed
+echo "🔍 Checking PNPM installation..."
+if ! command -v pnpm &> /dev/null; then
+    print_error "PNPM is not installed. Installing PNPM..."
+    npm install -g pnpm
+    print_success "PNPM installed successfully"
+else
+    print_success "PNPM is already installed: $(pnpm --version)"
+fi
 
-if (!fs.existsSync(envPath)) {
-  console.log('📝 Creating .env file from template...');
-  try {
-    fs.copyFileSync(envExamplePath, envPath);
-    console.log('✅ .env file created successfully');
-    console.log('⚠️  Please edit .env file with your configuration');
-  } catch (error) {
-    console.error('❌ Failed to create .env file:', error.message);
-  }
-} else {
-  console.log('✅ .env file already exists');
-}
+# Install dependencies
+echo "📦 Installing dependencies..."
+if pnpm install; then
+    print_success "Dependencies installed successfully"
+else
+    print_error "Failed to install dependencies"
+    exit 1
+fi
 
-// Create necessary directories
-const directories = [
-  'logs',
-  'plugins',
-  'assets',
-  'temp',
-  'cache'
-];
+# Build shared package first
+echo "🔨 Building shared package..."
+if pnpm --filter "@free-cluely/shared" run build; then
+    print_success "Shared package built successfully"
+else
+    print_error "Failed to build shared package"
+    exit 1
+fi
 
-directories.forEach(dir => {
-  const fullPath = path.resolve(dir);
-  if (!fs.existsSync(fullPath)) {
-    console.log(`📁 Creating directory: ${dir}`);
-    fs.mkdirSync(fullPath, { recursive: true });
-  }
-});
+# Build other packages
+echo "🔨 Building remaining packages..."
+if pnpm run build:packages; then
+    print_success "All packages built successfully"
+else
+    print_warning "Some packages failed to build, but continuing..."
+fi
 
-// Check if git is initialized
-if (!fs.existsSync(path.resolve('.git'))) {
-  console.log('🔧 Initializing git repository...');
-  try {
-    execSync('git init', { stdio: 'pipe' });
-    execSync('git add .', { stdio: 'pipe' });
-    execSync('git commit -m "Initial commit: Free-Cluely setup"', { stdio: 'pipe' });
-    console.log('✅ Git repository initialized');
-  } catch (error) {
-    console.warn('⚠️  Failed to initialize git repository:', error.message);
-  }
-} else {
-  console.log('✅ Git repository already exists');
-}
+# Create .env file if it doesn't exist
+if [ ! -f ".env" ]; then
+    if [ -f ".env.example" ]; then
+        echo "📝 Creating .env file from template..."
+        cp .env.example .env
+        print_success ".env file created successfully"
+        print_warning "Please edit .env file with your API keys and configuration"
+    else
+        print_warning ".env.example not found, creating basic .env file..."
+        cat > .env << EOF
+NODE_ENV=development
+GEMINI_API_KEY=your_gemini_api_key_here
+DASHBOARD_PORT=3000
+PERMISSION_SCREEN=true
+PERMISSION_CLIPBOARD=false
+PERMISSION_AUTOMATION=false
+PERMISSION_NETWORK=true
+EOF
+        print_success "Basic .env file created"
+    fi
+else
+    print_success ".env file already exists"
+fi
 
-// Create development scripts
-const devScript = `#!/bin/bash
+# Create necessary directories
+echo "📁 Creating necessary directories..."
+DIRS=("logs" "temp" "cache" "release")
+for dir in "${DIRS[@]}"; do
+    if [ ! -d "$dir" ]; then
+        mkdir -p "$dir"
+        print_info "Created directory: $dir"
+    fi
+done
 
-# Development script for Free-Cluely
+# Make scripts executable
+echo "🔧 Setting up scripts..."
+if [ -f "dev.sh" ]; then
+    chmod +x dev.sh
+    print_success "dev.sh script is executable"
+fi
+
+if [ -f "build.sh" ]; then
+    chmod +x build.sh
+    print_success "build.sh script is executable"
+fi
+
+# Check if git is initialized
+if [ ! -d ".git" ]; then
+    echo "🔧 Initializing git repository..."
+    git init
+    git add .
+    git commit -m "Initial commit: Free-Cluely setup" || print_warning "Git commit failed (this is okay)"
+    print_success "Git repository initialized"
+else
+    print_success "Git repository already exists"
+fi
+
+# Create development script if it doesn't exist
+if [ ! -f "dev.sh" ]; then
+    echo "📝 Creating development script..."
+    cat > dev.sh << 'EOF'
+#!/bin/bash
+
+# Free-Cluely Development Script
 
 echo "🚀 Starting Free-Cluely development environment..."
-
-# Start dashboard in background
-echo "📊 Starting dashboard..."
-cd apps/dashboard
-pnpm dev &
-DASHBOARD_PID=$!
-
-# Wait for dashboard to be ready
-echo "⏳ Waiting for dashboard to start..."
-sleep 10
-
-# Start electron in background
-echo "🖥️  Starting Electron app..."
-cd ../apps/electron-host
-pnpm dev &
-ELECTRON_PID=$!
-
-echo "✅ Development environment started!"
-echo "📊 Dashboard: http://localhost:3000"
-echo "🖥️  Electron app: Starting..."
-echo ""
-echo "Press Ctrl+C to stop all services"
 
 # Function to cleanup on exit
 cleanup() {
     echo ""
     echo "🛑 Stopping development environment..."
-    kill $DASHBOARD_PID 2>/dev/null
-    kill $ELECTRON_PID 2>/dev/null
+    # Kill all child processes
+    jobs -p | xargs -r kill
     echo "✅ All services stopped"
     exit 0
 }
@@ -138,19 +152,45 @@ cleanup() {
 # Set up signal handlers
 trap cleanup SIGINT SIGTERM
 
+# Start dashboard in background
+echo "📊 Starting dashboard..."
+cd apps/dashboard
+pnpm dev &
+DASHBOARD_PID=$!
+
+# Wait a moment for dashboard to start
+sleep 3
+
+# Go back to root
+cd ../..
+
+# Start electron app
+echo "🖥️  Starting Electron app..."
+cd apps/electron-host
+pnpm dev &
+ELECTRON_PID=$!
+
+# Go back to root
+cd ../..
+
+echo "✅ Development environment started!"
+echo "📊 Dashboard: http://localhost:3000"
+echo "🖥️  Electron app: Starting..."
+echo ""
+echo "Press Ctrl+C to stop all services"
+
 # Wait for processes
-wait`;
+wait
+EOF
+    chmod +x dev.sh
+    print_success "Development script created: ./dev.sh"
+fi
 
-fs.writeFileSync(path.resolve('dev.sh'), devScript);
-try {
-  execSync('chmod +x dev.sh', { stdio: 'pipe' });
-  console.log('✅ Development script created: ./dev.sh');
-} catch (error) {
-  console.warn('⚠️  Failed to make dev.sh executable');
-}
-
-// Create build scripts
-const buildScript = `#!/bin/bash
+# Create build script if it doesn't exist
+if [ ! -f "build.sh" ]; then
+    echo "📝 Creating build script..."
+    cat > build.sh << 'EOF'
+#!/bin/bash
 
 echo "🔨 Building Free-Cluely for production..."
 
@@ -158,134 +198,47 @@ echo "🔨 Building Free-Cluely for production..."
 echo "🧹 Cleaning previous builds..."
 pnpm run clean:all
 
-# Build everything
-echo "📦 Building all components..."
-pnpm run build
+# Install dependencies
+echo "📦 Installing dependencies..."
+pnpm install
+
+# Build packages
+echo "📦 Building packages..."
+pnpm run build:packages
+
+# Build dashboard
+echo "📊 Building dashboard..."
+pnpm run build:dashboard
+
+# Build electron
+echo "🖥️  Building electron..."
+pnpm run build:electron
 
 # Package application
 echo "📦 Packaging application..."
 pnpm run package
 
 echo "✅ Build completed successfully!"
-echo "📁 Release files available in ./release/ directory`;
+echo "📁 Release files available in ./release/ directory"
+EOF
+    chmod +x build.sh
+    print_success "Build script created: ./build.sh"
+fi
 
-fs.writeFileSync(path.resolve('build.sh'), buildScript);
-try {
-  execSync('chmod +x build.sh', { stdio: 'pipe' });
-  console.log('✅ Build script created: ./build.sh');
-} catch (error) {
-  console.warn('⚠️  Failed to make build.sh executable');
-}
-
-// Create README with setup instructions
-const readmeContent = `# Free-Cluely Development Setup
-
-## Prerequisites
-
-- Node.js 20+
-- PNPM package manager
-- Git (optional)
-
-## Quick Start
-
-1. **Install dependencies and setup environment:**
-   \`\`\`bash
-   ./setup.sh
-   \`\`\`
-
-2. **Configure your environment:**
-   \`\`\`bash
-   cp .env.example .env
-   # Edit .env with your API keys and preferences
-   \`\`\`
-
-3. **Start development environment:**
-   \`\`\`bash
-   ./dev.sh
-   \`\`\`
-
-4. **Build for production:**
-   \`\`\`bash
-   ./build.sh
-   \`\`\`
-
-## Manual Setup
-
-If the setup script doesn't work, you can set up manually:
-
-\`\`\`bash
-# Install dependencies
-pnpm install
-
-# Build packages
-pnpm run build:packages
-
-# Create .env file
-cp .env.example .env
-
-# Start development
-pnpm run dev:all
-\`\`\`
-
-## Development Commands
-
-- \`pnpm run dev:all\` - Start all development servers
-- \`pnpm run dev:dashboard\` - Start only dashboard
-- \`pnpm run dev:electron\` - Start only electron app
-- \`pnpm run build\` - Build all components
-- \`pnpm run package\` - Package for distribution
-- \`pnpm run clean\` - Clean build artifacts
-
-## Configuration
-
-Edit the \`.env\` file to configure:
-
-- LLM API keys (Gemini, Ollama)
-- Permission settings
-- Dashboard configuration
-- Build settings
-
-## Project Structure
-
-\`\`\`
-free-cluely/
-├── apps/
-│   ├── dashboard/          # Next.js dashboard
-│   └── electron-host/     # Electron main app
-├── packages/
-│   ├── shared/           # Shared types and utilities
-│   ├── plugin-bus/       # Plugin communication system
-│   ├── config/           # Configuration management
-│   └── permissions/      # Permission system
-├── plugins/
-│   ├── puppeteer-worker/ # Browser automation plugin
-│   └── vision-service/   # Image analysis plugin
-└── scripts/             # Build and setup scripts
-\`\`\`
-
-## Troubleshooting
-
-1. **Node.js version issues**: Ensure you're using Node.js 20+
-2. **PNPM not found**: Install with \`npm install -g pnpm\`
-3. **Build failures**: Run \`pnpm run clean:all\` and try again
-4. **Permission issues**: Check file permissions on scripts
-
-## Support
-
-- Issues: https://github.com/free-cluely/free-cluely/issues
-- Documentation: https://docs.free-cluely.com
-- Discord: https://discord.gg/free-cluely
-
----
-
-Happy coding! 🚀`;
-
-fs.writeFileSync(path.resolve('SETUP.md'), readmeContent);
-console.log('✅ Setup documentation created: SETUP.md');
-
-console.log('\n🎉 Setup completed successfully!');
-console.log('\nNext steps:');
-console.log('1. Edit .env file with your configuration');
-console.log('2. Run ./dev.sh to start development');
-console.log('3. Check SETUP.md for detailed instructions');
-console.log('\n📚 Documentation available in SETUP.md');
+# Final success message
+echo ""
+print_success "🎉 Setup completed successfully!"
+echo ""
+echo "📋 Next steps:"
+echo "1. Edit .env file with your API keys and configuration"
+echo "2. Run ./dev.sh to start development environment"
+echo "3. Visit http://localhost:3000 for the dashboard"
+echo ""
+echo "📚 Available commands:"
+echo "  ./dev.sh          - Start development environment"
+echo "  ./build.sh        - Build for production"
+echo "  pnpm run dev:all  - Alternative development start"
+echo "  pnpm run build    - Build all packages"
+echo "  pnpm run package  - Package for distribution"
+echo ""
+print_info "Happy coding! 🚀"
