@@ -15,7 +15,7 @@ import {
   ProviderError,
   ModerationService,
   createModeratedAdapter
-} from '@atlas/shared';
+} from '@free-cluely/shared';
 
 export interface ProviderConfig {
   type: 'openai' | 'anthropic' | 'gemini' | 'ollama';

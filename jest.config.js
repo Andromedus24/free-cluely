@@ -3,17 +3,17 @@
  * Comprehensive testing setup for all packages and applications
  */
 
-const nextJest = require('next/jest')
-
-const createJestConfig = nextJest({
-  // Provide the path to your Next.js app to load next.config.js and .env files
-  dir: './apps/dashboard',
-})
-
 // Custom Jest configuration
 const customJestConfig = {
+  // Enable ES modules
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+    },
+  },
   // Add more setup options before each test is run
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.mjs'],
 
   // Directories to search for test files
   testMatch: [
@@ -27,9 +27,10 @@ const customJestConfig = {
   // Module file extensions
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
-  // Transform files with Babel
+  // Transform files with ts-jest
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
+    '^.+\\.(ts|tsx)$': 'ts-jest',
+    '^.+\\.(js|jsx)$': 'babel-jest',
   },
 
   // Coverage configuration
@@ -60,7 +61,7 @@ const customJestConfig = {
   testEnvironment: 'jsdom',
 
   // Setup files
-  setupFiles: ['<rootDir>/jest.setup.js'],
+  setupFiles: ['<rootDir>/jest.setup.mjs'],
 
   // Module name mapper for aliases
   moduleNameMapper: {
@@ -102,9 +103,8 @@ const customJestConfig = {
   maxWorkers: '50%',
 
   // Global setup and teardown
-  globalSetup: '<rootDir>/jest.global-setup.js',
-  globalTeardown: '<rootDir>/jest.global-teardown.js',
+  globalSetup: '<rootDir>/jest.global-setup.mjs',
+  globalTeardown: '<rootDir>/jest.global-teardown.mjs',
 }
 
-// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(customJestConfig)
+module.exports = customJestConfig

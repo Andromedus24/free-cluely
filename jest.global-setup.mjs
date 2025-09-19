@@ -3,7 +3,7 @@
  * Runs once before all test suites
  */
 
-module.exports = async () => {
+export default async () => {
   // Global setup for all test suites
   console.log('🚀 Setting up test environment...')
 

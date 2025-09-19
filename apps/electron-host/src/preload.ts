@@ -91,9 +91,15 @@ const electronAPI = {
   // Dashboard
   dashboard: {
     open: () => ipcRenderer.invoke('dashboard:open'),
-    getUrl: () => {
-      const port = 3000; // This should come from config
-      return `http://localhost:${port}`;
+    getUrl: async () => {
+      try {
+        const config: any = await ipcRenderer.invoke('config:get');
+        const port = config?.dashboard?.port || 3000;
+        return `http://localhost:${port}`;
+      } catch (error) {
+        console.warn('Failed to get dashboard config, using default port 3000');
+        return 'http://localhost:3000';
+      }
     }
   },
 

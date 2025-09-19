@@ -3,7 +3,7 @@
  * Runs once after all test suites
  */
 
-module.exports = async () => {
+export default async () => {
   // Global cleanup after all test suites
   console.log('🧹 Cleaning up test environment...')
 

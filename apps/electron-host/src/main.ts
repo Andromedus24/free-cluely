@@ -5,6 +5,7 @@ import { permissionManager } from '@free-cluely/permissions';
 import { createPluginBus, createLogger, createConfigManager } from '@free-cluely/plugin-bus';
 import { OverlayPlugin } from '@free-cluely/overlay-plugin';
 import { ScreenshotPlugin } from '@free-cluely/screenshot-plugin';
+import { EnvironmentValidator } from './env-validator';
 
 // Global references
 let mainWindow: BrowserWindow;
@@ -14,6 +15,9 @@ let isQuitting = false;
 // Plugin instances
 let overlayPlugin: OverlayPlugin;
 let screenshotPlugin: ScreenshotPlugin;
+
+// Validate environment configuration first
+const envData = EnvironmentValidator.validateOrExit();
 
 // Initialize services
 const logger = createLogger('info');
@@ -274,62 +278,123 @@ function setupGlobalShortcuts(): void {
 
 // Set up IPC handlers
 function setupIPCHandlers(): void {
+  const { createSecureIPCHandler } = require('./ipc-security');
+
   // App info
-  ipcMain.handle('app:get-info', () => ({
+  ipcMain.handle('app:get-info', createSecureIPCHandler(mainWindow, 'app:get-info', () => ({
     version: app.getVersion(),
     name: app.getName(),
     isDevelopment: configManager.isDevelopment(),
     isProduction: configManager.isProduction()
-  }));
+  })));
 
   // Configuration
-  ipcMain.handle('config:get', () => configManager.getAppConfig());
-  ipcMain.handle('config:update', (_event, updates) => {
-    configManager.updateConfig(updates);
-  });
-  ipcMain.handle('config:validate', () => configManager.validate());
+  ipcMain.handle('config:get', createSecureIPCHandler(mainWindow, 'config:get', () => 
+    configManager.getAppConfig()
+  ));
+  
+  ipcMain.handle('config:update', createSecureIPCHandler(mainWindow, 'config:update', 
+    (_event, updates) => {
+      // Validate the updates against the schema (already done in createSecureIPCHandler)
+      // Apply the configuration update
+      configManager.updateConfig(updates);
+      return { success: true, message: 'Configuration updated successfully' };
+    }
+  ));
+  
+  ipcMain.handle('config:validate', createSecureIPCHandler(mainWindow, 'config:validate', () => 
+    configManager.validate()
+  ));
 
   // Permissions
-  ipcMain.handle('permission:get', () => permissionManager.getPermissions());
-  ipcMain.handle('permission:has', (_event, permission) => permissionManager.hasPermission(permission));
-  ipcMain.handle('permission:request', (_event, permission) => permissionManager.requestPermission(permission));
-  ipcMain.handle('permission:set', (_event, permission, granted) => {
-    permissionManager.setPermission(permission, granted);
-  });
-  ipcMain.handle('permission:summary', () => permissionManager.getPermissionSummary());
+  ipcMain.handle('permission:get', createSecureIPCHandler(mainWindow, 'permission:get', () => 
+    permissionManager.getPermissions()
+  ));
+  
+  ipcMain.handle('permission:has', createSecureIPCHandler(mainWindow, 'permission:has', 
+    (_event, permission) => permissionManager.hasPermission(permission)
+  ));
+  
+  ipcMain.handle('permission:request', createSecureIPCHandler(mainWindow, 'permission:request', 
+    (_event, permission) => permissionManager.requestPermission(permission)
+  ));
+  
+  ipcMain.handle('permission:set', createSecureIPCHandler(mainWindow, 'permission:set', 
+    (_event, { permission, granted }) => {
+      permissionManager.setPermission(permission, granted);
+      return { success: true, message: 'Permission updated successfully' };
+    }
+  ));
+  
+  ipcMain.handle('permission:summary', createSecureIPCHandler(mainWindow, 'permission:summary', () => 
+    permissionManager.getPermissionSummary()
+  ));
 
   // Plugin management
-  ipcMain.handle('plugin:list', () => pluginBus.getPlugins());
-  ipcMain.handle('plugin:start', (_event, pluginName) => pluginBus.startPlugin(pluginName));
-  ipcMain.handle('plugin:stop', (_event, pluginName) => pluginBus.stopPlugin(pluginName));
-  ipcMain.handle('plugin:register', (_event, manifest) => pluginBus.register(manifest));
-  ipcMain.handle('plugin:unregister', (_event, pluginName) => pluginBus.unregister(pluginName));
+  ipcMain.handle('plugin:list', createSecureIPCHandler(mainWindow, 'plugin:list', () => 
+    pluginBus.getPlugins()
+  ));
+  
+  ipcMain.handle('plugin:start', createSecureIPCHandler(mainWindow, 'plugin:start', 
+    (_event, pluginName) => pluginBus.startPlugin(pluginName)
+  ));
+  
+  ipcMain.handle('plugin:stop', createSecureIPCHandler(mainWindow, 'plugin:stop', 
+    (_event, pluginName) => pluginBus.stopPlugin(pluginName)
+  ));
+  
+  ipcMain.handle('plugin:register', createSecureIPCHandler(mainWindow, 'plugin:register', 
+    (_event, manifest) => pluginBus.register(manifest)
+  ));
+  
+  ipcMain.handle('plugin:unregister', createSecureIPCHandler(mainWindow, 'plugin:unregister', 
+    (_event, pluginName) => pluginBus.unregister(pluginName)
+  ));
 
   // Screenshot capture
-  ipcMain.handle('screenshot:capture', async () => {
-    try {
-      const screenshot = require('screenshot-desktop');
-      const imageBuffer = await screenshot();
-      return imageBuffer.toString('base64');
-    } catch (error) {
-      logger.error(`Screenshot capture failed: ${error}`);
-      throw error;
+  ipcMain.handle('screenshot:capture', createSecureIPCHandler(mainWindow, 'screenshot:capture', 
+    async () => {
+      try {
+        const screenshot = require('screenshot-desktop');
+        const imageBuffer = await screenshot();
+        return imageBuffer.toString('base64');
+      } catch (error) {
+        logger.error(`Screenshot capture failed: ${error}`);
+        throw error;
+      }
     }
-  });
+  ));
 
   // Window management
-  ipcMain.handle('window:show', () => mainWindow.show());
-  ipcMain.handle('window:hide', () => mainWindow.hide());
-  ipcMain.handle('window:minimize', () => mainWindow.minimize());
-  ipcMain.handle('window:maximize', () => mainWindow.maximize());
-  ipcMain.handle('window:close', () => mainWindow.close());
+  ipcMain.handle('window:show', createSecureIPCHandler(mainWindow, 'window:show', () => 
+    mainWindow.show()
+  ));
+  
+  ipcMain.handle('window:hide', createSecureIPCHandler(mainWindow, 'window:hide', () => 
+    mainWindow.hide()
+  ));
+  
+  ipcMain.handle('window:minimize', createSecureIPCHandler(mainWindow, 'window:minimize', () => 
+    mainWindow.minimize()
+  ));
+  
+  ipcMain.handle('window:maximize', createSecureIPCHandler(mainWindow, 'window:maximize', () => 
+    mainWindow.maximize()
+  ));
+  
+  ipcMain.handle('window:close', createSecureIPCHandler(mainWindow, 'window:close', () => 
+    mainWindow.close()
+  ));
 
   // Dashboard control
-  ipcMain.handle('dashboard:open', () => {
+  ipcMain.handle('dashboard:open', createSecureIPCHandler(mainWindow, 'dashboard:open', () => {
     if (configManager.getDashboardConfig().enabled) {
       require('electron').shell.openExternal(DASHBOARD_URL);
+      return { success: true, message: 'Dashboard opened' };
+    } else {
+      throw new Error('Dashboard is disabled');
     }
-  });
+  }));
 
   // Handle renderer permission responses
   ipcMain.on('permission-response', (_event, requestId: string, granted: boolean) => {

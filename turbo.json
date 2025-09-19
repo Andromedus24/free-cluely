@@ -15,7 +15,12 @@
       "persistent": true
     },
     "lint": {
-      "outputs": []
+      "outputs": [],
+      "dependsOn": ["^build"]
+    },
+    "lint:fix": {
+      "outputs": [],
+      "dependsOn": ["^build"]
     },
     "type-check": {
       "outputs": []
