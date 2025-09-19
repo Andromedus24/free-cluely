@@ -77,7 +77,7 @@ export class EnvironmentValidator {
       const baseResult = baseSchema.safeParse(env);
       
       if (!baseResult.success) {
-        baseResult.error.errors.forEach(error => {
+        baseResult.error.issues.forEach((error: any) => {
           errors.push(`${error.path.join('.')}: ${error.message}`);
         });
       }
@@ -105,10 +105,10 @@ export class EnvironmentValidator {
         warnings: warnings.length > 0 ? warnings : undefined 
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       return { 
         success: false, 
-        errors: [`Unexpected validation error: ${error.message}`] 
+        errors: [`Unexpected validation error: ${error instanceof Error ? error.message : String(error)}`] 
       };
     }
   }
@@ -132,7 +132,7 @@ export class EnvironmentValidator {
         if (result.success) {
           return { success: true, data: result.data, errors: [] };
         }
-        errors.push(...result.error.errors.map(e => e.message));
+        errors.push(...result.error.issues.map((e: any) => e.message));
       } catch (error) {
         errors.push('Failed to validate Ollama configuration');
       }
@@ -146,7 +146,7 @@ export class EnvironmentValidator {
         if (result.success) {
           return { success: true, data: result.data, errors: [] };
         }
-        errors.push(...result.error.errors.map(e => e.message));
+        errors.push(...result.error.issues.map((e: any) => e.message));
       } catch (error) {
         errors.push('Failed to validate Ollama configuration');
       }
@@ -160,7 +160,7 @@ export class EnvironmentValidator {
         if (result.success) {
           return { success: true, data: result.data, errors: [] };
         }
-        errors.push(...result.error.errors.map(e => e.message));
+        errors.push(...result.error.issues.map((e: any) => e.message));
       } catch (error) {
         errors.push('Failed to validate Gemini configuration');
       }

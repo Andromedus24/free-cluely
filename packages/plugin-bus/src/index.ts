@@ -1,7 +1,9 @@
-export { PluginBusImpl } from './PluginBusImpl';
-export { ConfigManagerImpl } from './ConfigManagerImpl';
-export { LoggerImpl } from './LoggerImpl';
-export { PermissionManagerImpl } from './PermissionManagerImpl';
+import { PluginBusImpl } from './PluginBusImpl';
+import { ConfigManagerImpl } from './ConfigManagerImpl';
+import { LoggerImpl } from './LoggerImpl';
+import { PermissionManagerImpl } from './PermissionManagerImpl';
+
+export { PluginBusImpl, ConfigManagerImpl, LoggerImpl, PermissionManagerImpl };
 
 // Factory functions
 export const createPluginBus = (config: any, logger: any, permissions: any) => {

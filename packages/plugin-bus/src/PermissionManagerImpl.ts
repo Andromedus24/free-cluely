@@ -45,8 +45,8 @@ export class PermissionManagerImpl extends EventEmitter implements PermissionMan
       return granted;
     } catch (error) {
       throw new PermissionError(
-        `Failed to request permission '${permission}': ${error instanceof Error ? error.message : String(error)}`,
-        permission
+        `Failed to request permission '${String(permission)}': ${error instanceof Error ? error.message : String(error)}`,
+        String(permission)
       );
     }
   }
@@ -135,7 +135,7 @@ export class PermissionManagerImpl extends EventEmitter implements PermissionMan
     
     // Check if automation allowlist contains invalid domains
     if (config.automation.allowlist && config.automation.allowlist.length > 0) {
-      const invalidDomains = config.automation.allowlist.filter(domain => {
+      const invalidDomains = config.automation.allowlist.filter((domain: string) => {
         // Simple domain validation
         const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])*$|^(\*\.)[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])*$/;
         return !domainRegex.test(domain);
@@ -223,11 +223,11 @@ export class PermissionManagerImpl extends EventEmitter implements PermissionMan
     // For demo purposes, we'll auto-approve screen and network permissions
     // and deny clipboard and automation by default
     const autoApprove = ['screen', 'network'];
-    return autoApprove.includes(permission);
+    return autoApprove.includes(String(permission));
   }
 
   // Listen for specific permission changes
-  onPermissionChange(permission: keyof Permission, handler: (granted: boolean) => void): () => void {
+  onSpecificPermissionChange(permission: keyof Permission, handler: (granted: boolean) => void): () => void {
     const wrappedHandler = (changedPermission: keyof Permission, granted: boolean) => {
       if (changedPermission === permission) {
         handler(granted);

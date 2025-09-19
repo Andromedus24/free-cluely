@@ -1,4 +1,5 @@
-export { ConfigManager, configManager } from './ConfigManager';
+import { ConfigManager, configManager } from './ConfigManager';
+export { ConfigManager, configManager };
 export type { EnvConfig } from './ConfigManager';
 
 // Re-export types from shared

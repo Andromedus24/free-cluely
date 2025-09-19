@@ -219,7 +219,7 @@ export class ConfigManager {
     
     // Validate automation allowlist domains
     if (this.appConfig.automation.allowlist.length > 0) {
-      const invalidDomains = this.appConfig.automation.allowlist.filter(domain => {
+      const invalidDomains = this.appConfig.automation.allowlist.filter((domain: string) => {
         const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])*$/;
         return !domainRegex.test(domain) && !domainRegex.test(domain.replace(/^\*\./, ''));
       });
