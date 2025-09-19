@@ -22,9 +22,6 @@
       "outputs": [],
       "dependsOn": ["^build"]
     },
-    "type-check": {
-      "outputs": []
-    },
     "clean": {
       "cache": false
     },

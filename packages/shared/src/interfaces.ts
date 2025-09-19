@@ -4,7 +4,9 @@ import {
   PluginMessage, 
   PluginResponse, 
   AppConfig,
-  LogEntry 
+  LogEntry,
+  VisionRequest,
+  VisionResponse
 } from './types';
 
 // Plugin Bus Interface
@@ -111,25 +113,7 @@ export interface ChatStreamChunk {
   timestamp: number;
 }
 
-// Vision Types
-export interface VisionRequest {
-  image: string | Buffer;
-  prompt?: string;
-  mode?: 'ocr' | 'analysis' | 'extraction';
-  options?: {
-    confidence?: number;
-    extractStructured?: boolean;
-    template?: string;
-  };
-}
-
-export interface VisionResponse {
-  text: string;
-  confidence: number;
-  structured?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
-  timestamp: number;
-}
+// Vision types are now imported from ./types
 
 // Image Generation Types
 export interface ImageGenerateRequest {
@@ -279,8 +263,8 @@ export const validateManifest = (manifest: unknown): PluginManifest => {
     description: z.string(),
     main: z.string(),
     permissions: z.array(z.enum(['screen', 'clipboard', 'automation', 'network'])).default([]),
-    dependencies: z.record(z.string()).optional(),
-    config: z.record(z.unknown()).optional(),
+    dependencies: z.record(z.string(), z.string()).optional(),
+    config: z.record(z.string(), z.unknown()).optional(),
   }).parse(manifest);
 };
 

@@ -123,7 +123,7 @@ export class PluginBusImpl extends EventEmitter implements PluginBus {
     }
   }
 
-  broadcast(event: Omit<PluginMessage, 'id' | 'type'>): void> {
+  broadcast(event: Omit<PluginMessage, 'id' | 'type'>): void {
     const message: PluginMessage = {
       id: uuidv4(),
       type: 'event',

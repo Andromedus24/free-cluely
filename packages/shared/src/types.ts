@@ -8,8 +8,8 @@ export const PluginManifestSchema = z.object({
   author: z.string().optional(),
   main: z.string(),
   permissions: z.array(z.enum(['screen', 'clipboard', 'automation', 'network'])).default([]),
-  dependencies: z.record(z.string()).optional(),
-  config: z.record(z.unknown()).optional(),
+  dependencies: z.record(z.string(), z.string()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type PluginManifest = z.infer<typeof PluginManifestSchema>;
@@ -52,7 +52,7 @@ export const ScreenshotConfigSchema = z.object({
     width: z.number().default(320),
     height: z.number().default(240),
     quality: z.number().min(1).max(100).default(80)
-  }).default({}),
+  }).default({ width: 320, height: 240, quality: 80 }),
   previewCacheTTL: z.number().default(3600000), // 1 hour in milliseconds
   maxPreviewCacheSize: z.number().default(100), // Max number of cached previews
   // Timeout and cancellation settings
@@ -65,7 +65,16 @@ export const ScreenshotConfigSchema = z.object({
     screenshotProcessing: z.number().default(60000), // 60 seconds
     regionSelection: z.number().default(30000), // 30 seconds
     baseOperation: z.number().default(30000), // 30 seconds base timeout
-  }).default({}),
+  }).default({
+    fullScreenCapture: 10000,
+    windowCapture: 15000,
+    regionCapture: 45000,
+    previewGeneration: 10000,
+    artifactAttachment: 15000,
+    screenshotProcessing: 60000,
+    regionSelection: 30000,
+    baseOperation: 30000
+  }),
   enableCancellation: z.boolean().default(true),
   cancellationTimeout: z.number().default(5000), // 5 seconds to wait for cancellation to complete
 });
@@ -87,12 +96,27 @@ export const ScreenshotPipelineConfigSchema = z.object({
       description: z.string().default('Analyze screenshot for debugging and troubleshooting'),
       tags: z.array(z.string()).default(['screenshot', 'debug', 'troubleshooting'])
     })
-  }).default({}),
+  }).default({
+    problem: {
+      title: 'Screenshot Analysis Request',
+      description: 'Analyze screenshot for problem identification and solution',
+      tags: ['screenshot', 'problem', 'analysis']
+    },
+    debug: {
+      title: 'Debug Screenshot Analysis',
+      description: 'Analyze screenshot for debugging and troubleshooting',
+      tags: ['screenshot', 'debug', 'troubleshooting']
+    }
+  }),
   sessionManagement: z.object({
     autoCreateSessions: z.boolean().default(true),
     sessionTimeout: z.number().default(30 * 60 * 1000), // 30 minutes
     defaultSessionName: z.string().default('Screenshot Analysis Session')
-  }).default({})
+  }).default({
+    autoCreateSessions: true,
+    sessionTimeout: 30 * 60 * 1000,
+    defaultSessionName: 'Screenshot Analysis Session'
+  })
 });
 
 export type ScreenshotPipelineConfig = z.infer<typeof ScreenshotPipelineConfigSchema>;
@@ -121,10 +145,10 @@ export const RegionSchema = z.object({
 export type Region = z.infer<typeof RegionSchema>;
 
 export const WindowInfoSchema = z.object({
-  id: number,
-  title: string,
+  id: z.number(),
+  title: z.string(),
   bounds: RegionSchema,
-  ownerName: string,
+  ownerName: z.string(),
 });
 
 export type WindowInfo = z.infer<typeof WindowInfoSchema>;
@@ -277,7 +301,7 @@ export type VisionRequest = z.infer<typeof VisionRequestSchema>;
 
 export const VisionResponseSchema = z.object({
   text: z.string(),
-  json: z.record(z.unknown()).optional(),
+  json: z.record(z.string(), z.unknown()).optional(),
   confidence: z.number().min(0).max(1),
   timestamp: z.number(),
 });
@@ -291,7 +315,7 @@ export const PuppeteerRequestSchema = z.object({
   selector: z.string().optional(),
   text: z.string().optional(),
   timeout: z.number().default(30000),
-  options: z.record(z.unknown()).optional(),
+  options: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type PuppeteerRequest = z.infer<typeof PuppeteerRequestSchema>;
@@ -313,7 +337,7 @@ export const LogEntrySchema = z.object({
   message: z.string(),
   plugin: z.string().optional(),
   timestamp: z.number(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type LogEntry = z.infer<typeof LogEntrySchema>;

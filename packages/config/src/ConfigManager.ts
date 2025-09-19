@@ -337,6 +337,3 @@ export class ConfigManager {
 
 // Create singleton instance
 export const configManager = new ConfigManager();
-
-// Export for testing and multiple instances
-export { ConfigManager };
